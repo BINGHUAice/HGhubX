@@ -5,7 +5,7 @@ import { api, fmt } from "../api";
 import type { Post, TopicCard, TopicDetail, VideoCard } from "../types";
 import { useStore } from "../store";
 import { MAX_BLOCKED_TAGS, MAX_TAG_LENGTH, useContentPreferences } from "../contentPreferences";
-import { Masonry } from "../components/cards";
+import { Masonry, MediaCard } from "../components/cards";
 import { FilteredContent } from "../components/FilteredContent";
 import { InplaceSearch } from "../components/InplaceSearch";
 import { Empty, Img } from "../components/ui";
