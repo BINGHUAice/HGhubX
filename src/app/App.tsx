@@ -113,8 +113,7 @@ function MainTabs({ wide, pageActive, bottomInset }: { wide: boolean; pageActive
 function AppBody() {
   const { platform, tab, setTab, stack, pop, loginOpen, setLoginOpen, fs, clean } = useStore();
   const mainRef = useRef<HTMLDivElement>(null);
-  const [wide, setWide] = useState(!isMobile);
-  const [collapsed, setCollapsed] = useState(false);
+  const [wide, setWide] = useState(false);
 
   useLayoutEffect(() => {
     const el = mainRef.current;
@@ -145,15 +144,14 @@ function AppBody() {
   }, [stack.length, pop, setTab, loginOpen, setLoginOpen]);
 
   const pageActive = stack.length === 0 && !loginOpen;
-  const bottomInset = isMobile ? (fs || clean ? 0 : 74) : 14;
+  const bottomInset = fs || clean ? 0 : 74;
   /* 栈页（从搜索/分类/我的进入的播放页、图文页）没有底栏，
      底部只让出安全区。之前多留了 20px，视频底边会露出一条
      「底栏」似的窄缝（底部的压暗渐变到不了屏幕最底）。 */
-  const stackInset = isMobile ? 0 : 14;
+  const stackInset = 0;
 
   return (
     <div className={`absolute inset-0 flex bg-canvas plat-${platform}`}>
-      {!isMobile && <DesktopRail collapsed={collapsed} />}
       <div ref={mainRef} className="relative flex-1 min-w-0 overflow-hidden win-main">
         <MainTabs wide={wide} pageActive={pageActive} bottomInset={bottomInset} />
 
@@ -163,7 +161,7 @@ function AppBody() {
           </div>
         ))}
 
-        {isMobile && !fs && !clean && stack.length === 0 && <TabBar />}
+        {!fs && !clean && stack.length === 0 && <TabBar />}
       </div>
     </div>
   );

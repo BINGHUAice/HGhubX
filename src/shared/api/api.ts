@@ -347,21 +347,3 @@ export const fmtTime = (s: number) => {
   const ss = Math.floor(s % 60);
   return `${m}:${ss.toString().padStart(2, "0")}`;
 };
-
-export const dur = (s?: number | string) => {
-  const n = Number(s) || 0;
-  if (n <= 0) return "";
-  const m = Math.floor(n / 60);
-  const ss = n % 60;
-  return `${m}:${String(ss).padStart(2, "0")}`;
-};
-
-/** 非 m3u8 媒体（mp4 等）走 /seg 原样透传 */
-export function directMedia(url: string): string {
-  return `${LOCAL}/seg?u=${encodeURIComponent(url)}`;
-}
-
-/** 按扩展名选择代理方式：m3u8 → 播放列表改写；其它 → 原样透传 */
-export function mediaUrl(url: string): string {
-  return /\.m3u8(\?|$)/i.test(url) ? playlist(url) : directMedia(url);
-}

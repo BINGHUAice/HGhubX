@@ -9,7 +9,7 @@ import { hasAcceptedAgreement } from "../../shared/storage/usageAgreement";
 let launchCompleted = false;
 export const LAUNCH_DURATION = 2200;
 
-/** Exact public/logo.svg geometry, split into independent spring-animated strokes. */
+/** Exact hghubx.svg geometry, split into independent spring-animated strokes. */
 export function LaunchAnimation({ onFinish }: { onFinish: () => void }) {
   const gradient = useId();
   const finishRef = useRef(onFinish);
