@@ -21,7 +21,7 @@
 
 例：`src-tauri/src/api/mod.rs` 用 `pub use account::*` 等 re-export 保住命令注册；`api/mod.rs`
 顶部明确写“Tauri command names stay unchanged”。`src-tauri/src/media/mod.rs` 的 `LOCAL_ORIGIN`
-和 `src/api.ts` 的 `LOCAL` 是跨语言契约，移动时只能改 import，不能改值。
+和 `src/shared/api/api.ts` 的 `LOCAL` 是跨语言契约，移动时只能改 import，不能改值。
 
 检查：移动前后跑同一组命令/fixture；`git diff -w` 只应看到路径和 `use`。
 
@@ -30,9 +30,9 @@
 读取、解析、同步失败意味着“未知”，不能写成空数组、空对象、`false` 或“没有”。未知状态要有
 独立字段和 UI，不能靠 `length === 0` 推断。
 
-例：`src/accountData.ts` 的 `favoritesKnown` 只有在 `api_me` 返回
+例：`src/shared/model/accountData.ts` 的 `favoritesKnown` 只有在 `api_me` 返回
 `interactions.favorite_video_ids` 数组时才置 true；失败或缺字段保持 false。
-`src/pages/Profile.tsx` 用 `favoriteStateUnknown` 显示“收藏状态未知”，绝不显示“还没有收藏”。
+`src/features/account/Profile.tsx` 用 `favoriteStateUnknown` 显示“收藏状态未知”，绝不显示“还没有收藏”。
 回归是 `scripts/test-account-sync-empty-state.mjs` 的五个场景。
 
 检查：新增状态时问“失败和成功空结果是否可区分”；测试必须覆盖失败、缺字段、同步中和真正空。
@@ -56,9 +56,9 @@
 读取失败不能清空已有对象、偏好、历史或旧键。写入失败要保留可继续使用的旧值，并把错误暴露给
 用户或日志；不能先删除再尝试写。
 
-例：`src/storage.ts` 的 `readStorage()` 只有新键写入并回读一致后才删除旧键；写/删失败时旧键
-仍在，下次启动继续读。`src/contentPreferences.ts` 写入失败仍更新内存快照并设置
-`storageError`；`src/accountData.ts` 的 `syncAccount()` 失败不会把 `favs` 清空。
+例：`src/shared/storage/storage.ts` 的 `readStorage()` 只有新键写入并回读一致后才删除旧键；写/删失败时旧键
+仍在，下次启动继续读。`src/shared/model/contentPreferences.ts` 写入失败仍更新内存快照并设置
+`storageError`；`src/shared/model/accountData.ts` 的 `syncAccount()` 失败不会把 `favs` 清空。
 
 检查：用配额不足、`SecurityError`、损坏 JSON 三种 fixture 复现；刷新后旧数据仍在。
 
@@ -104,12 +104,12 @@
 ## 9. Tauri command 和 JSON 是跨语言契约
 
 命令名、参数名、`Option`/`null`、Serde `rename_all` 后的 camelCase 字段和前端 `invoke` 类型
-必须同步。新增/移动 command 要同时改 `generate_handler!`、`src/api.ts` 的封装和类型；不要只改
+必须同步。新增/移动 command 要同时改 `generate_handler!`、`src/shared/api/api.ts` 的封装和类型；不要只改
 Rust 或只改前端。
 
 例：`src-tauri/src/cache.rs` 的 `CacheClearReport` 用
 `#[serde(rename_all = "camelCase")]`，测试断言 `webCache` 而不是 `web_cache`；
-`src/api.ts` 的 `clearCache` 返回 `{webCache, platform}`。`src-tauri/src/api/mod.rs` 的
+`src/shared/api/api.ts` 的 `clearCache` 返回 `{webCache, platform}`。`src-tauri/src/api/mod.rs` 的
 re-export 让命令名在目录化后保持不变。
 
 检查：`pnpm build` 的测试 tsconfig 能否发现前端类型漂移；Rust 序列化测试是否断言实际 JSON 键。
@@ -132,7 +132,7 @@ Range 截断；`src-tauri/tauri.conf.json` 的 CSP 只允许本地 scheme 和 IP
 旧键只在升级时读取；运行期只写新键。写入并回读成功后才能删除旧键；失败保留旧数据。一次性
 迁移要用独立标记，不能覆盖用户后来显式选择的设置。
 
-例：`src/storage.ts` 的 `readStorage()` 和 `LEGACY_KEYS`；`src/store.tsx` 的 `swipeEp` 迁移用
+例：`src/shared/storage/storage.ts` 的 `readStorage()` 和 `LEGACY_KEYS`；`src/shared/model/store.tsx` 的 `swipeEp` 迁移用
 `STORAGE_KEYS.swipeEp` 标记，只在未迁移时把旧默认 `false` 改成 `true`。回归是
 `scripts/test-storage-migration.mjs` 的写/删失败和旧数据场景。
 

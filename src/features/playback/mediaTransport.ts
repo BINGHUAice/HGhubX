@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import { LOCAL, platform, playlist } from "../../api";
+import { LOCAL, platform, playlist } from "../../shared/api/api";
 
 type PlaybackSource = { engine: "hls.js" | "native"; url: string; route: string };
 

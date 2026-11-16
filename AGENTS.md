@@ -1,8 +1,8 @@
 # HGhubX 工程入口
 
 这份文件给修改仓库的工程师和 coding agent 用。它不是产品说明，也不重复 README。
-文档基线：2026-11-16，`codex/repo-foundation`（起点 `1d7b825`）。代码移动期间，
-当前物理路径以 `git status` 和 `find src src-tauri/src` 为准，不要凭旧路径猜文件。
+文档基线：2026-11-17，`codex/repo-foundation`（起点 `1d7b825`）。当前目录与依赖边界见
+[`docs/architecture.md`](docs/architecture.md)；实际文件以工作区为准，不要凭旧路径猜文件。
 
 ## 先读什么
 
@@ -36,14 +36,19 @@ CI 是验证记录。命令写了不等于已经运行；报告里必须写清�
 
 ### 前端
 
-- `src/App.tsx`：应用壳、桌面/移动布局、页面栈、启动门和全局返回/键盘处理。
-- `src/features/feed/`：`Feed.tsx` 与 `useFeedDetails.ts`，负责列表播放页、详情/帖子读取和标签门。
-- `src/features/playback/`：`VideoSurface`、`Player`、控制条、HLS 恢复、播放时钟、seek 和原生媒体传输。
-- `src/pages/`、`src/components/`：尚未迁入 feature 的页面与共享 UI；`src/components/Panels.tsx` 等仍是现行位置。
-- `src/api.ts`、`src/store.tsx`、`src/accountData.ts`、`src/storage.ts`、`src/contentPreferences.ts`：
-  当前共享的 IPC、应用状态、账号作用域、存储迁移和内容偏好。
-- `app/features/shared` 是目标边界；目前只有 `features/feed` 和 `features/playback` 已落地。
-  不要假设 `src/app/`、`src/shared/` 已经存在。
+- `src/main.tsx`：挂载 React、启动诊断，并在使用协议确认后装配应用 Provider 和自动选线。
+- `src/app/`：`App.tsx` 负责页面栈、桌面/移动布局和全局交互；`shell/` 放窗口控件，
+  `startup/` 放启动门。
+- `src/features/`：按 `account/category/discover/feed/playback/posts/search/settings` 归组页面、
+  专属组件与 hooks。Feed 的详情/评论/选集面板、设置页的线路/代理控件都随功能放置。
+- `src/shared/`：`api`（IPC 与响应类型）、`model`（应用/账号/内容偏好状态）、`network`（自动选线）、
+  `storage`（存储键与协议版本）、`diagnostics`、`lib`、`ui`（跨功能控件）。
+- `src/shared/model/store.tsx` 仍聚合导航、账号与播放偏好；这次目录迁移没有拆 Provider。
+  `shared/ui` 可消费 `shared/model`，不是独立的无状态控件库。
+- 依赖以 `app → features/shared`、`features → shared` 为主；现有 `feed/posts → playback`、
+  列表页 → `search/InplaceSearch` 是明确的功能复用。`shared` 不反向依赖 `app/features`。
+- 页面懒加载直接指向功能内的页面文件；不要新增汇总全部页面的 barrel。`src/index.css` 与
+  `src/styles/` 保持固定位置，避免目录整理改变样式加载次序。
 
 ### Rust
 

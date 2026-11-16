@@ -1,5 +1,5 @@
 import { useSyncExternalStore, type HTMLAttributes } from "react";
-import { fmtTime } from "../../api";
+import { fmtTime } from "../../shared/api/api";
 import type { PlaybackClock } from "./playbackClock";
 
 /** Only these small subscribers repaint on timeupdate, not the entire Feed. */

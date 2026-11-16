@@ -15,12 +15,12 @@ Feed 负责列表播放页的条目位置、详情/帖子读取、标签门、�
   `onLike`/`onFav`/`onFollow`、桌面 dock 与移动 Sheet。
 - [`src/features/feed/useFeedDetails.ts`](../../src/features/feed/useFeedDetails.ts)：
   `detailRequests`、`requestDetail`、`effectiveVideoIds`、`detailsRef`。
-- [`src/components/Panels.tsx`](../../src/components/Panels.tsx) 的
+- [`src/features/feed/Panels.tsx`](../../src/features/feed/Panels.tsx) 的
   `CommentsPanel`、`EpisodesPanel`、`ArticlePanel`；
-  [`src/components/VideoDetailsPanel.tsx`](../../src/components/VideoDetailsPanel.tsx)。
-- [`src/store.tsx`](../../src/store.tsx) 的 `lineEpoch` 和 `accountScope` 传递；
-  [`src/accountData.ts`](../../src/accountData.ts) 的 `generation`；
-  [`src/contentPreferences.ts`](../../src/contentPreferences.ts) 的 `blockReason`。
+  [`src/features/feed/VideoDetailsPanel.tsx`](../../src/features/feed/VideoDetailsPanel.tsx)。
+- [`src/shared/model/store.tsx`](../../src/shared/model/store.tsx) 的 `lineEpoch` 和 `accountScope` 传递；
+  [`src/shared/model/accountData.ts`](../../src/shared/model/accountData.ts) 的 `generation`；
+  [`src/shared/model/contentPreferences.ts`](../../src/shared/model/contentPreferences.ts) 的 `blockReason`。
 - 后端读取：[`src-tauri/src/api/feed.rs`](../../src-tauri/src/api/feed.rs)、
   [`src-tauri/src/api/video.rs`](../../src-tauri/src/api/video.rs)、
   [`src-tauri/src/api/interact.rs`](../../src-tauri/src/api/interact.rs)。

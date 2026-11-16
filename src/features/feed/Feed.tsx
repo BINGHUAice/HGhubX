@@ -1,31 +1,31 @@
-import { Button, Image, SegmentedControl } from "../../components/ios/controls";
-import { Loader } from "../../components/ios/effects";
+import { Button, Image, SegmentedControl } from "../../shared/ui/ios/controls";
+import { Loader } from "../../shared/ui/ios/effects";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { api, cover, fmt, fmtTime, isMobile, logLine } from "../../api";
-import type { Detail, Episode, PlayInfo, Post, VideoCard } from "../../types";
-import { useStore } from "../../store";
-import { Img, Sheet } from "../../components/ui";
-import { ArticlePanel, CommentsPanel, EpisodesPanel } from "../../components/Panels";
-import { setBackHandler } from "../../back";
-import { copyText } from "../../clipboard";
+import { api, cover, fmt, fmtTime, isMobile, logLine } from "../../shared/api/api";
+import type { Detail, Episode, PlayInfo, Post, VideoCard } from "../../shared/api/types";
+import { useStore } from "../../shared/model/store";
+import { Img, Sheet } from "../../shared/ui/ui";
+import { ArticlePanel, CommentsPanel, EpisodesPanel } from "./Panels";
+import { setBackHandler } from "../../shared/lib/back";
+import { copyText } from "../../shared/lib/clipboard";
 import {
   PlaybackLock, PlaybackProgress, PlaybackTime, PlayerControls, VideoSurface,
   createPlaybackClock, type VideoHandle,
 } from "../playback";
-import { tracePlayback } from "../../playbackDiagnostics";
-import { useContentPreferences } from "../../contentPreferences";
-import { TagBlockMenu } from "../../components/TagBlockMenu";
-import VideoDetailsPanel from "../../components/VideoDetailsPanel";
-import { PreferenceStorageNotice } from "../../components/PreferenceStorageNotice";
-import MobileHoldGuide from "../../components/MobileHoldGuide";
-import { getHoldZone, HOLD_DELAY_MS, HOLD_LOCK_DISTANCE, type HoldZone } from "../../mobileHold";
-import { useMobileHoldGuide } from "../../useMobileHoldGuide";
+import { tracePlayback } from "../../shared/diagnostics/playbackDiagnostics";
+import { useContentPreferences } from "../../shared/model/contentPreferences";
+import { TagBlockMenu } from "../../shared/ui/TagBlockMenu";
+import VideoDetailsPanel from "./VideoDetailsPanel";
+import { PreferenceStorageNotice } from "../../shared/ui/PreferenceStorageNotice";
+import MobileHoldGuide from "./MobileHoldGuide";
+import { getHoldZone, HOLD_DELAY_MS, HOLD_LOCK_DISTANCE, type HoldZone } from "./mobileHold";
+import { useMobileHoldGuide } from "./useMobileHoldGuide";
 import { useFeedDetails } from "./useFeedDetails";
 import {
   IBack, IBoltF, IChevR, IChevronDown, IChevronUp, IClose, ICommentF, ICompress, IExpand, IFileText, IHeart, IHeartF, IMore,
   ILink, IList, ILockF, IPauseF, IPlayF, ISearch, IStar, IStarF, IVertSwap, IVol, IVolMute,
-} from "../../icons";
+} from "../../shared/ui/icons";
 
 type Props = {
   videoIds: number[];

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { api } from "../../api";
-import type { Detail, Post } from "../../types";
+import { api } from "../../shared/api/api";
+import type { Detail, Post } from "../../shared/api/types";
 
 type Args = {
   videoIds: number[];

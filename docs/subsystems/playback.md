@@ -90,7 +90,7 @@
 - iOS AVFoundation 不能读 `hg://`，所以只通过 `ios_media_http` 的临时 loopback
   capability 提供 `/hls` 与 `/seg`；不支持 `/img`，也不把该端口暴露成通用代理。
 - Linux WebKitGTK 没有 MediaSource 时由 GStreamer 播 HLS；`linux_http` 绑定失败时
-  播放会失败而不是静默切到自定义协议。端口必须和 `src/api.ts` 的 `LOCAL` 常量一致。
+  播放会失败而不是静默切到自定义协议。端口必须和 `src/shared/api/api.ts` 的 `LOCAL` 常量一致。
 - 原生错误不会无限重试：`mediaErrorMessage` 只给用户可理解的
   network/decode/unsupported 提示；真正的恢复必须重新挂载传输或走 proxy retry。
 

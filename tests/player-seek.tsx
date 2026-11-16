@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Feed } from "../src/features/feed";
-import { AppProvider } from "../src/store";
-import { api } from "../src/api";
+import { AppProvider } from "../src/shared/model/store";
+import { api } from "../src/shared/api/api";
 import "../src/index.css";
-import { flushPlaybackLog, initPlaybackLog, playbackLogApi, setPlaybackLog } from "../src/playbackDiagnostics";
-import Settings from "../src/pages/Settings";
+import { flushPlaybackLog, initPlaybackLog, playbackLogApi, setPlaybackLog } from "../src/shared/diagnostics/playbackDiagnostics";
+import Settings from "../src/features/settings/Settings";
 import Hls from "hls.js";
 import { Player } from "../src/features/playback";
 

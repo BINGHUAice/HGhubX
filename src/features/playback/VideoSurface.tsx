@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useImperativeHandle, useRef, forwardRef, useState } from "react";
 import Hls from "hls.js";
-import { platform } from "../../api";
+import { platform } from "../../shared/api/api";
 import { connectNativeMedia, playbackSource } from "./mediaTransport";
 import { mediaErrorMessage } from "./mediaErrors";
-import { mediaHost, mediaResource, observeHls, usePlayerDiagnostics } from "../../playbackDiagnostics";
+import { mediaHost, mediaResource, observeHls, usePlayerDiagnostics } from "../../shared/diagnostics/playbackDiagnostics";
 import { usePlaybackActivity } from "./usePlaybackActivity";
 import { useProxyPlaybackRecovery } from "./useProxyPlaybackRecovery";
 import { createHlsRecovery, type HlsRecovery } from "./hlsRecovery";

@@ -8,7 +8,7 @@ loopback、Windows 的自定义标题栏与注册表代理判断、Android 的 W
 平台差异，不复制账号、线路或播放状态机。
 
 所有平台差异优先放在 `#[cfg(target_os = ...)]` 模块和 Tauri 平台配置文件里；业务函数不应
-在运行时猜测平台，前端只通过 `src/api.ts` 的 `platform`/`LOCAL` 常量消费差异。
+在运行时猜测平台，前端只通过 `src/shared/api/api.ts` 的 `platform`/`LOCAL` 常量消费差异。
 
 ## 事实来源
 
@@ -31,12 +31,12 @@ loopback、Windows 的自定义标题栏与注册表代理判断、Android 的 W
   [`tauri.linux.conf.json`](../../src-tauri/tauri.linux.conf.json)、
   [`tauri.macos.conf.json`](../../src-tauri/tauri.macos.conf.json)；Cargo 的 target 依赖在
   [`src-tauri/Cargo.toml`](../../src-tauri/Cargo.toml)。
-- 前端平台判断与本地基址：[`src/api.ts`](../../src/api.ts) 的 `isIos`、`isAndroid`、
+- 前端平台判断与本地基址：[`src/shared/api/api.ts`](../../src/shared/api/api.ts) 的 `isIos`、`isAndroid`、
   `isLinux`、`platform`、`LOCAL`、`isLocalMedia()`；桌面壳：
-  [`src/components/DesktopChrome.tsx`](../../src/components/DesktopChrome.tsx) 的
+  [`src/app/shell/DesktopChrome.tsx`](../../src/app/shell/DesktopChrome.tsx) 的
   `DesktopTitleBar`/`win-titlebar`、`DesktopRail`；移动壳见
-  [`src/App.tsx`](../../src/App.tsx) 的 `TabBar`/`MobileShell` 和
-  [`src/components/ios/`](../../src/components/ios/)。
+  [`src/app/App.tsx`](../../src/app/App.tsx) 的 `TabBar`/`MobileShell` 和
+  [`src/shared/ui/ios/`](../../src/shared/ui/ios/)。
 
 ## 主运行时路径
 
@@ -119,7 +119,7 @@ loopback、Windows 的自定义标题栏与注册表代理判断、Android 的 W
 
 ## 约束与失败行为
 
-- `media::LOCAL_ORIGIN`、`src/api.ts` 的 `LOCAL`、Linux `PORT`、iOS loopback 端口必须成对
+- `media::LOCAL_ORIGIN`、`src/shared/api/api.ts` 的 `LOCAL`、Linux `PORT`、iOS loopback 端口必须成对
   修改；任何一处不一致都会表现为封面/清单加载失败，而不是编译错误。
 - 自定义协议/CSP 只能在平台配置中按需扩到本地媒体地址；不得加入任意 `http:`/`https:` 或
   放宽 `script-src`、`connect-src`、`frame-src`。iOS 配置只额外允许 `http://127.0.0.1:*` 作为

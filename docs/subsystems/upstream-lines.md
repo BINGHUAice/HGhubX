@@ -31,9 +31,9 @@ origin”，不负责 HTTP 客户端、代理、DNS 固定或媒体字节（见
   `line_state`、`line_set`、`line_custom_set`、`line_reset`、`line_cancel`、`line_mirrors`、
   `line_probe`、`line_auto`、`line_try_main`、`line_health`；命令注册在
   [`src-tauri/src/lib.rs`](../../src-tauri/src/lib.rs) 的 `generate_handler!`。
-- 前端自动选线：[`src/autoLine.ts`](../../src/autoLine.ts) 的 `autoLineEnabled()`、
+- 前端自动选线：[`src/shared/network/autoLine.ts`](../../src/shared/network/autoLine.ts) 的 `autoLineEnabled()`、
   `pickLine()`、`check()`、`attach()`、`initAutoLine()`、`setAutoLine()`。
-- 线路 UI：[`src/components/LinePicker.tsx`](../../src/components/LinePicker.tsx) 的
+- 线路 UI：[`src/features/settings/LinePicker.tsx`](../../src/features/settings/LinePicker.tsx) 的
   `readState()`、`readMirrors()`、`probe()`、`applyLine()`、`saveCustom()`。
 
 ## 主运行时路径

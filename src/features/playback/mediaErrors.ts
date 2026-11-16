@@ -1,4 +1,4 @@
-import { isIos, isLinux } from "../../api";
+import { isIos, isLinux } from "../../shared/api/api";
 
 export function mediaErrorMessage(error: MediaError | null): string {
   switch (error?.code) {

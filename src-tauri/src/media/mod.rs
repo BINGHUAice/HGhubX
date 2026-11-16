@@ -22,7 +22,7 @@ use response::{apply_byte_range, respond, segment_response, PROXIED_IMAGE_CACHE_
 ///
 /// Tauri 的自定义协议地址随平台不同：Windows / Android 是 `http://<scheme>.localhost`，
 /// macOS / iOS / Linux 是 `<scheme>://localhost`。m3u8 里的分片与 key 地址按它改写。
-/// 前端 `src/api.ts` 的 `LOCAL` 必须与此一致，否则封面与视频全部加载失败。
+/// 前端 `src/shared/api/api.ts` 的 `LOCAL` 必须与此一致，否则封面与视频全部加载失败。
 #[cfg(any(target_os = "windows", target_os = "android"))]
 pub const LOCAL_ORIGIN: &str = "http://hg.localhost";
 /// Linux 走 loopback HTTP：WebKitGTK 的播放器是 GStreamer，它拿不到自定义 scheme。

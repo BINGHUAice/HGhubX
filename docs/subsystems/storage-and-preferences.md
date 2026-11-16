@@ -12,16 +12,16 @@
 
 ## 事实来源
 
-- 键与迁移：[`src/storage.ts`](../../src/storage.ts) 的 `STORAGE_KEYS`（`app`、`swipeEp`、
+- 键与迁移：[`src/shared/storage/storage.ts`](../../src/shared/storage/storage.ts) 的 `STORAGE_KEYS`（`app`、`swipeEp`、
   `theme`、`autoLine`）、`LEGACY_KEYS`、`StorageKey`、`readStorage()`。
-- 内容偏好：[`src/contentPreferences.ts`](../../src/contentPreferences.ts) 的
+- 内容偏好：[`src/shared/model/contentPreferences.ts`](../../src/shared/model/contentPreferences.ts) 的
   `CONTENT_PREFERENCES_KEY`、`MAX_BLOCKED_TAGS`、`MAX_TAG_LENGTH`、`normalizeTag()`、
   `normalizePreferences()`、`readPreferences()`、`tagIndex()`、`blockReason()`、`update()`、
   `useContentPreferences()`。
-- 本地账号：[`src/accountData.ts`](../../src/accountData.ts) 的 `ACCOUNT_KEY`、`SyncState`、
+- 本地账号：[`src/shared/model/accountData.ts`](../../src/shared/model/accountData.ts) 的 `ACCOUNT_KEY`、`SyncState`、
   `favoritesKnown`、`sanitize()`、`persist()`、`setUser()`、`syncAccount()`、`clearHistory()`、
   `addHistory()`、`accountScope`。
-- 应用偏好：[`src/store.tsx`](../../src/store.tsx) 的 `Persist`、`DEFAULTS`、
+- 应用偏好：[`src/shared/model/store.tsx`](../../src/shared/model/store.tsx) 的 `Persist`、`DEFAULTS`、
   `normalizeHistory()`、`loadPersist()`、`readThemePreference()`、`LS`、
   `STORAGE_KEYS.theme`/`autoLine`。
 - 会话：[`src-tauri/src/session.rs`](../../src-tauri/src/session.rs) 的 `Session`、
@@ -31,7 +31,7 @@
   `cache_clear`；[`src-tauri/src/cache.rs`](../../src-tauri/src/cache.rs) 的
   `CacheClearReport`、`clear_web_cache()`、`safe_cache_types()`。
 - 账号同步空状态：[`scripts/test-account-sync-empty-state.mjs`](../../scripts/test-account-sync-empty-state.mjs)
-  和 [`src/pages/Profile.tsx`](../../src/pages/Profile.tsx) 的 `favoriteStateUnknown`。
+  和 [`src/features/account/Profile.tsx`](../../src/features/account/Profile.tsx) 的 `favoriteStateUnknown`。
 - 迁移回归：[`scripts/test-storage-migration.mjs`](../../scripts/test-storage-migration.mjs)、
   [`tests/storage-migration.tsx`](../../tests/storage-migration.tsx)。
 

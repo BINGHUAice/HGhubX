@@ -7,7 +7,7 @@
 //! MediaSource，hls.js 也用不上。Linux 端的播放只能让 GStreamer 的 hlsdemux
 //! 原生完成，而它需要一个真正可取的 HTTP 地址——就是这个服务。
 //!
-//! 端口固定，前端 `src/api.ts` 的 `LOCAL` 必须与 [`ORIGIN`] 一致。
+//! 端口固定，前端 `src/shared/api/api.ts` 的 `LOCAL` 必须与 [`ORIGIN`] 一致。
 
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
