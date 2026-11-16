@@ -1,6 +1,6 @@
 import { Loader } from "../components/ios/effects";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Feed from "../components/Feed";
+import { Feed } from "../features/feed";
 import { api } from "../api";
 import type { VideoCard } from "../types";
 import { useStore } from "../store";

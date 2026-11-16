@@ -7,7 +7,7 @@ import type { Post } from "../types";
 import { useStore } from "../store";
 import { copyText } from "../clipboard";
 import { Empty, Img } from "../components/ui";
-import Player from "../components/Player";
+import { Player } from "../features/playback";
 import { IBack, IFireF, IPlayF, ISearch } from "../icons";
 import { handleArticleClick, sanitizeHtml } from "../html";
 import { InplaceSearch } from "../components/InplaceSearch";

@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react";
-import { registerOverlayBack } from "./back";
+import { registerOverlayBack } from "../../back";
 
 type Activity = {
   play: (source: string, automatic?: boolean) => void;

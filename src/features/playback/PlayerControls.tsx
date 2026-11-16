@@ -1,9 +1,9 @@
-import { Button, Input } from "./ios/controls";
+import { Button, Input } from "../../components/ios/controls";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { fmtTime } from "../api";
-import { useSeekInput } from "../useSeekInput";
-import { ICheck, ICompress, IExpand, ILockF, INext, IPauseF, IPip, IPlayF, ITheater, IVertSwap, IVol, IVolMute } from "../icons";
-import type { PlaybackClock } from "../playbackClock";
+import { fmtTime } from "../../api";
+import { useSeekInput } from "./useSeekInput";
+import { ICheck, ICompress, IExpand, ILockF, INext, IPauseF, IPip, IPlayF, ITheater, IVertSwap, IVol, IVolMute } from "../../icons";
+import type { PlaybackClock } from "./playbackClock";
 
 type Props = {
   paused: boolean;

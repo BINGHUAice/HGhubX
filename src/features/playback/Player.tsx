@@ -1,20 +1,20 @@
-import { Button, Input } from "./ios/controls";
-import { Loader } from "./ios/effects";
+import { Button, Input } from "../../components/ios/controls";
+import { Loader } from "../../components/ios/effects";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Hls from "hls.js";
-import { fmtTime, platform } from "../api";
-import { connectNativeMedia, playbackSource } from "../mediaTransport";
-import { mediaErrorMessage } from "../mediaErrors";
-import { mediaHost, mediaResource, observeHls, usePlayerDiagnostics } from "../playbackDiagnostics";
-import { usePlaybackActivity } from "../usePlaybackActivity";
-import { useProxyPlaybackRecovery } from "../useProxyPlaybackRecovery";
-import { createHlsRecovery, type HlsRecovery } from "../hlsRecovery";
-import { useSeekInput } from "../useSeekInput";
+import { fmtTime, platform } from "../../api";
+import { connectNativeMedia, playbackSource } from "./mediaTransport";
+import { mediaErrorMessage } from "./mediaErrors";
+import { mediaHost, mediaResource, observeHls, usePlayerDiagnostics } from "../../playbackDiagnostics";
+import { usePlaybackActivity } from "./usePlaybackActivity";
+import { useProxyPlaybackRecovery } from "./useProxyPlaybackRecovery";
+import { createHlsRecovery, type HlsRecovery } from "./hlsRecovery";
+import { useSeekInput } from "./useSeekInput";
 import PlaybackLock from "./PlaybackLock";
-import { useInlinePlayerFullscreen } from "../useInlinePlayerFullscreen";
-import "../styles/post-player.css";
-import { ICompress, IExpand, ILockF, IPauseF, IPlayF, IVol, IVolMute } from "../icons";
+import { useInlinePlayerFullscreen } from "./useInlinePlayerFullscreen";
+import "../../styles/post-player.css";
+import { ICompress, IExpand, ILockF, IPauseF, IPlayF, IVol, IVolMute } from "../../icons";
 
 type Props = {
   src: string;              // 原始 m3u8 地址

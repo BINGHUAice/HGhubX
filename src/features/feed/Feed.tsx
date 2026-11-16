@@ -1,31 +1,31 @@
-import { Button, Image, SegmentedControl } from "./ios/controls";
-import { Loader } from "./ios/effects";
+import { Button, Image, SegmentedControl } from "../../components/ios/controls";
+import { Loader } from "../../components/ios/effects";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { api, cover, fmt, fmtTime, isMobile, logLine } from "../api";
-import type { Detail, Episode, PlayInfo, Post, VideoCard } from "../types";
-import { useStore } from "../store";
-import { Img, Sheet } from "./ui";
-import VideoSurface, { type VideoHandle } from "./VideoSurface";
-import PlayerControls from "./PlayerControls";
-import { PlaybackProgress, PlaybackTime } from "./PlaybackProgress";
-import PlaybackLock from "./PlaybackLock";
-import { ArticlePanel, CommentsPanel, EpisodesPanel } from "./Panels";
-import { setBackHandler } from "../back";
-import { copyText } from "../clipboard";
-import { tracePlayback } from "../playbackDiagnostics";
-import { createPlaybackClock } from "../playbackClock";
-import { useContentPreferences } from "../contentPreferences";
-import { TagBlockMenu } from "./TagBlockMenu";
-import VideoDetailsPanel from "./VideoDetailsPanel";
-import { PreferenceStorageNotice } from "./PreferenceStorageNotice";
-import MobileHoldGuide from "./MobileHoldGuide";
-import { getHoldZone, HOLD_DELAY_MS, HOLD_LOCK_DISTANCE, type HoldZone } from "../mobileHold";
-import { useMobileHoldGuide } from "../useMobileHoldGuide";
+import { api, cover, fmt, fmtTime, isMobile, logLine } from "../../api";
+import type { Detail, Episode, PlayInfo, Post, VideoCard } from "../../types";
+import { useStore } from "../../store";
+import { Img, Sheet } from "../../components/ui";
+import { ArticlePanel, CommentsPanel, EpisodesPanel } from "../../components/Panels";
+import { setBackHandler } from "../../back";
+import { copyText } from "../../clipboard";
+import {
+  PlaybackLock, PlaybackProgress, PlaybackTime, PlayerControls, VideoSurface,
+  createPlaybackClock, type VideoHandle,
+} from "../playback";
+import { tracePlayback } from "../../playbackDiagnostics";
+import { useContentPreferences } from "../../contentPreferences";
+import { TagBlockMenu } from "../../components/TagBlockMenu";
+import VideoDetailsPanel from "../../components/VideoDetailsPanel";
+import { PreferenceStorageNotice } from "../../components/PreferenceStorageNotice";
+import MobileHoldGuide from "../../components/MobileHoldGuide";
+import { getHoldZone, HOLD_DELAY_MS, HOLD_LOCK_DISTANCE, type HoldZone } from "../../mobileHold";
+import { useMobileHoldGuide } from "../../useMobileHoldGuide";
+import { useFeedDetails } from "./useFeedDetails";
 import {
   IBack, IBoltF, IChevR, IChevronDown, IChevronUp, IClose, ICommentF, ICompress, IExpand, IFileText, IHeart, IHeartF, IMore,
   ILink, IList, ILockF, IPauseF, IPlayF, ISearch, IStar, IStarF, IVertSwap, IVol, IVolMute,
-} from "../icons";
+} from "../../icons";
 
 type Props = {
   videoIds: number[];
@@ -54,24 +54,7 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
   const [tagMenu, setTagMenu] = useState(false);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [tagErrors, setTagErrors] = useState<Record<string, string>>({});
-  const [details, setDetails] = useState<Record<number, Detail>>({});
-  const detailsRef = useRef(details);
-  detailsRef.current = details;
-  const [posts, setPosts] = useState<Record<number, Post>>({});
-  const detailRequests = useRef(new Map<string, Promise<Detail>>());
   const playRequests = useRef(new Map<string, Promise<PlayInfo>>());
-  const requestDetail = useCallback((id: number) => {
-    const key = `${accountScope}:${store.lineEpoch}:${id}`;
-    let request = detailRequests.current.get(key);
-    if (!request) {
-      request = api.video(id).finally(() => {
-        if (detailRequests.current.get(key) === request) detailRequests.current.delete(key);
-      });
-      detailRequests.current.set(key, request);
-      if (detailRequests.current.size > 12) detailRequests.current.delete(detailRequests.current.keys().next().value!);
-    }
-    return request;
-  }, [accountScope, store.lineEpoch]);
   const requestPlay = useCallback((id: number, episode: number) => {
     const key = `${accountScope}:${store.lineEpoch}:${id}:${episode}`;
     let request = playRequests.current.get(key);
@@ -84,15 +67,10 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
     }
     return request;
   }, [accountScope, store.lineEpoch]);
-  const effectiveVideoIds = useMemo(
-    () => mode === "context" && filtering ? videoIds.filter(id => {
-      const key = `${accountScope}:${store.lineEpoch}:${kind}:${id}`;
-      if (!checked[key]) return true;
-      if (tagErrors[key]) return true;
-      return !blockReason(kind === "post" ? posts[id]?.tags : details[id]?.tags);
-    }) : videoIds,
-    [mode, filtering, revision, videoIds, accountScope, store.lineEpoch, kind, checked, tagErrors, posts, details, blockReason],
-  );
+  const { details, setDetails, detailsRef, posts, setPosts, requestDetail, effectiveVideoIds } = useFeedDetails({
+    videoIds, mode, kind, accountScope, lineEpoch: store.lineEpoch, filtering, revision,
+    blockReason, checked, tagErrors,
+  });
 
   const boxRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<VideoHandle>(null);

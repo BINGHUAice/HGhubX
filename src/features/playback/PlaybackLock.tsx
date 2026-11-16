@@ -1,6 +1,6 @@
-import { Button } from "./ios/controls";
+import { Button } from "../../components/ios/controls";
 import { useEffect } from "react";
-import { ILockF } from "../icons";
+import { ILockF } from "../../icons";
 
 /** Shield pointer input and playback shortcuts without pausing the media. */
 export default function PlaybackLock({ active, onUnlock }: { active: boolean; onUnlock: () => void }) {
