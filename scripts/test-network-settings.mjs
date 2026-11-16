@@ -67,6 +67,15 @@ try {
     }, { theme });
     await page.goto(`${origin}tests/line-selection.html`);
     await page.waitForFunction(() => window.lineSelectionSnapshot?.ready);
+    const networkGroup = page.getByRole("button", { name: "网络设置", exact: true });
+    // Historical baselines can predate the collapsible settings groups.
+    if (!expectMissing || await networkGroup.count()) {
+      await networkGroup.waitFor();
+      assert.equal(await networkGroup.getAttribute("aria-expanded"), "false");
+      await networkGroup.click();
+      await page.getByRole("button", { name: "网络设置", exact: true, expanded: true }).waitFor();
+      assert.equal(await networkGroup.getAttribute("aria-expanded"), "true");
+    }
     return { page, context };
   }
   const calls = (page, command) => page.evaluate(command => window.networkSettingsFixture.calls.filter(row => row.command === command), command);
