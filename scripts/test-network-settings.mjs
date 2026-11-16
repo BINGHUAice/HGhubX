@@ -13,7 +13,7 @@ await mkdir(output, { recursive: true });
 const report = { environment: "Actual Settings/LinePicker/ProxySettings/store, Chromium, mocked IPC", passed: [], errors: [], external: [] };
 let vite, browser;
 try {
-  vite = await createServer({ root, server: { host: "127.0.0.1", port: 0 } });
+  vite = await createServer({ root, server: { host: "127.0.0.1", port: 0, strictPort: false } });
   await vite.listen();
   const origin = vite.resolvedUrls.local[0];
   browser = await chromium.launch({ headless: true, executablePath: process.env.BROWSER_EXECUTABLE || "/usr/bin/google-chrome" });
