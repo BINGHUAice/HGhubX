@@ -52,7 +52,7 @@ HTTP 404/其他不可重试的 4xx、权限和安全拒绝直接结束；超时�
 
 ## 本地验证
 
-使用 [进度条回归的媒体样本与服务器](playback-seek.md)，打开 `http://127.0.0.1:1420/tests/player-seek.html?diagnostics=1`。该模式使用真实 Feed、PlayerControls、VideoSurface 和 hls.js，日志传输替换为内存；“诊断设置”按钮提供真实设置界面。控制台的 `window.playerSeekFixture.logs` 可查看记录，`flushLogs()` 可立即刷新批次。
+使用 [进度条回归的媒体样本与服务器](../investigations/playback-seek.md)，打开 `http://127.0.0.1:1420/tests/player-seek.html?diagnostics=1`。该模式使用真实 Feed、PlayerControls、VideoSurface 和 hls.js，日志传输替换为内存；“诊断设置”按钮提供真实设置界面。控制台的 `window.playerSeekFixture.logs` 可查看记录，`flushLogs()` 可立即刷新批次。
 
 验证默认关闭时点击不记录；通过设置开启后，实际鼠标点击和拖动应分别产生 `desktop_click`、`desktop_drag`，并串联 request、seeking、seeked、首帧恢复。拖动时有多个预览记录但没有实际定位，松手后恰好定位一次。暂停定位和键盘定位应产生 ready 且保持暂停；关闭后不再增加记录；保存失败保持原状态。前后端类型检查、Rust 日志脱敏/轮转/保存失败测试也随构建检查。
 
