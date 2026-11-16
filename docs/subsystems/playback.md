@@ -59,8 +59,8 @@
    `PlaybackProgress`/`PlaybackTime` 用 `useSyncExternalStore` 重绘，避免整个 Feed
    每 250ms 重渲染。Feed 每 5 秒把观看进度通过 `addHistory` 落盘，卸载时再补一次。
 7. `hg:proxy-changed` 会触发 `useProxyPlaybackRecovery.retry`：保存
-   `src/time/playing/rate`，增加 revision 重新挂载；收到 metadata 后恢复位置；
-   期间用户显式暂停则保持暂停。
+   `src/time/playing/rate`，增加 revision，在同一 `video` 元素上重建 HLS/原生媒体连接；
+   收到 metadata/data 后恢复位置、倍速与播放意图，期间用户显式暂停则保持暂停。
 
 ## 状态转换
 
@@ -92,7 +92,7 @@
 - Linux WebKitGTK 没有 MediaSource 时由 GStreamer 播 HLS；`linux_http` 绑定失败时
   播放会失败而不是静默切到自定义协议。端口必须和 `src/shared/api/api.ts` 的 `LOCAL` 常量一致。
 - 原生错误不会无限重试：`mediaErrorMessage` 只给用户可理解的
-  network/decode/unsupported 提示；真正的恢复必须重新挂载传输或走 proxy retry。
+  network/decode/unsupported 提示；手动重试通过 proxy retry 重建媒体连接。
 
 ## 验证命令
 

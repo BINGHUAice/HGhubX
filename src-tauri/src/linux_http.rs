@@ -18,7 +18,7 @@ pub const PORT: u16 = 17650;
 /// 前端与 m3u8 分片改写共用的 origin。
 pub const ORIGIN: &str = "http://127.0.0.1:17650";
 
-/// 在后台线程里起服务。绑定失败只记日志（播放会退回自定义协议，大概率失败）。
+/// 在后台线程里起服务。绑定失败时记日志并退出，本地媒体服务不可用，播放会失败。
 pub fn start() {
     std::thread::spawn(|| {
         let listener = match TcpListener::bind(("127.0.0.1", PORT)) {

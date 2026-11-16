@@ -1,5 +1,10 @@
 # 安全审查后续复核
 
+> 历史快照：本文保留 `security-audit` 分支当时的审查结论、提交和验证记录，不作为当前行为说明。
+> 其中 P1-2 的 `Origin: null` 拒绝结论已被后续 Android WebView 兼容处理取代；当前自定义协议
+> 允许缺失、空串及字面量 `null` 的 Origin，仍受媒体路由与目标地址策略约束。现状以
+> [`lib.rs`](../../src-tauri/src/lib.rs) 和 [平台壳](../subsystems/platform-shells.md) 为准。
+
 P2、P3 子编号按维护者原文的列举顺序补齐。修正均在 `security-audit`，不包含 `routing-rules` 的启动静音或规则变更。
 
 | 编号 | 处理 | Commit | 复核结论 |

@@ -53,7 +53,8 @@ ad-hoc 签名都不应进入仓库或本机脚本输出。
 5. `playback.yml` 和 `build-ios.yml` 都是 `workflow_dispatch`，不在每个 PR 自动跑。前者需要
    FFmpeg + Chromium，按 `seek,legacy,stall,lifecycle,mms` 等场景输出诊断；后者只验证 iOS
    工程能编出未签名 ipa。
-6. `release.yml` 在 `v*` tag 或手动填 `tag` 时运行。各平台 job 先跑
+6. `release.yml` 在推送 `v*` tag 或手动触发时运行；在分支上手动运行且 `tag` 留空时，
+   只构建所选范围，不发布 GitHub Release。各平台构建 job 先跑
    `node scripts/set-version.mjs "$V"`：同步 `package.json`、`tauri.conf.json`（含
    `bundle.android.versionCode`）、`Cargo.toml` 和 `Cargo.lock` 的 `hghubx` 版本。
    `versionCode = major*1_000_000 + minor*1_000 + patch`，minor/patch 超过 999 会报错。
@@ -68,22 +69,27 @@ ad-hoc 签名都不应进入仓库或本机脚本输出。
      `scripts/build-ios-unsigned.sh <version>`；Xcode `CODE_SIGNING_ALLOWED=NO`，产出
      `HGhubX_<version>_ios.ipa`。
    - Linux：`pnpm tauri build` 产出 deb，文件名 `HGhubX_<version>_amd64.deb`。
-8. `release` job 等各平台 artifact 后，用 `softprops/action-gh-release` 上传 `artifacts/*`；
+8. `release` job 依赖五个平台 job，以 `always()` 等待它们结束；发布条件是 `v*` tag ref，
+   或手动触发且 `tag` 非空，条件中没有限制 `platforms=all` 或 `quick=false`。
+   它下载已有 artifact，用 `softprops/action-gh-release` 上传 `artifacts/*`；
    如果存在 `docs/release-notes/<tag>.md` 就作为正文，否则自动生成说明。`fail_on_unmatched_files`
-   为 true，缺产物会失败。
+   为 true，没有匹配产物时失败，但不保证五个平台的产物全部存在。
 9. `check` job 只做编译/类型检查/单测，不产包；手动 `platforms=check` 是最快的“能不能编”验证。
 
 ## 状态转换
 
 - 版本：源版本（tag 或 `tauri.conf.json`）→ `set-version.mjs` 校验 `major.minor.patch` →
-  写四份文件 → `check-version-sync.mjs` 要求完全一致 → 平台构建。
+  写四份文件 → 平台构建。`check-version-sync.mjs` 由常规 CI 的 `frontend` job 调用，
+  不在当前 release workflow 中；它要求四处版本字符串一致，并检查 Android `versionCode`
+  为正整数，没有校验该值与版本号公式是否一致。
 - Android versionCode：版本号解析 → `major*1e6 + minor*1e3 + patch` → 写入
   `bundle.android.versionCode` → APK 签名 → `aapt2` 复核。
 - iOS：`ios init` 生成工程 → 补 plist → 启动 Tauri options server → Xcode release 构建 →
   `CODE_SIGNING_ALLOWED=NO` → 打包 Payload → `unzip -tq` 校验 → artifact。
-- CI：PR/push 触发 `frontend`/`rust`/`smoke`；手动触发 playback/iOS；tag 或手动 tag 触发
-  `release` 全平台（或单平台/check）。
-- 发布：artifact 上传完成 → release job 下载合并 → 读取版本说明 → 创建/更新 GitHub Release。
+- CI：PR/push 触发 `frontend`/`rust`/`smoke`；手动触发 playback/iOS；`v*` tag 触发
+  release workflow 全平台构建，手动触发则按 `platforms` 选择全部、单平台或 check。
+- 发布：满足上述 tag 条件 → 等待平台 job 结束 → release job 下载已有 artifact 并合并 →
+  读取版本说明 → 创建/更新 GitHub Release。在分支上手动运行且 `tag` 留空不进入发布 job。
 
 ## 约束与失败行为
 

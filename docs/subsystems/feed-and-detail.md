@@ -40,9 +40,10 @@ Feed 负责列表播放页的条目位置、详情/帖子读取、标签门、�
    需要读取的候选是当前项以及前后各一项；普通模式只读当前项。
 5. 标签门的键是 `` `${accountScope}:${lineEpoch}:${kind}:${id}` ``。
    `checked` 只在成功响应后置 true；`tagErrors` 保留可重试错误。
-   失败不会把标签当成空数组，也不会放行媒体。
-6. `allowed` 只有在标签已成功读取且 `blockReason` 为空时为 true。`allowed` 之前
-   不请求播放地址；在首页被屏蔽时通过 `onBlocked` 跳过，在上下文播放页则关闭面板。
+   失败不会把标签当成空数组；启用过滤时，读取失败继续阻止媒体请求。
+6. `allowed = !filtering || (tagsReady && !blocked)`：普通模式直接允许；启用过滤时，
+   必须成功读取标签且 `blockReason` 为空才允许。`allowed` 之前不请求播放地址；
+   在首页被屏蔽时通过 `onBlocked` 跳过，在上下文播放页则关闭面板。
 7. `requestPlay(id, episode)` 的 key 是
    `` `${accountScope}:${lineEpoch}:${id}:${episode}` ``，最多缓存 12 个 Promise。
    当前集开始播放后，才预取下一集的地址；下一部视频还要先通过详情/标签检查。
@@ -59,8 +60,8 @@ Feed 负责列表播放页的条目位置、详情/帖子读取、标签门、�
 
 - 条目切换：更新 `position`/`renderIndex` → 清理标签菜单和面板 → 重置播放 key →
   按新 key 读取详情/标签 → 允许后才请求播放地址。
-- 标签门：未读 → loading → `checked=true`（允许）或 `tagErrors`（显示重试）；
-  设置或账号/线路变化会使旧键失效并重新判断。
+- 标签门：未读 → loading → `checked=true`（再按 `blockReason` 判断）或 `tagErrors`（显示重试）；
+  启用过滤时依据结果放行媒体；设置或账号/线路变化会使旧键失效并重新判断。
 - 过滤结果：`effectiveVideoIds` 先按 `checked`/`tagErrors`/`blockReason` 过滤；
   正在播放项被移除时锚定相邻项，避免列表突然跳回第一屏。
 - 详情加载：`requestDetail` 进行中 → 成功写入 `details` 和 `detailsRef` →
@@ -72,13 +73,15 @@ Feed 负责列表播放页的条目位置、详情/帖子读取、标签门、�
 
 - `details`/`posts` 是 Feed 实例的局部状态，不是跨应用持久缓存；页面销毁后重新读取。
   这避免把旧标签或旧正文带进新会话，但也意味着返回 Feed 时可能重新请求。
-- 详情读失败不能标记 `checked`，不能把 `tags` 当空数组，也不能让播放器抢跑。
+- 详情读失败不能标记 `checked`，不能把 `tags` 当空数组；启用过滤时不能让播放器抢跑。
   标签门重试会删除对应 `tagErrors` 并增加 `proxyRetry`。
-- 旧账号或旧线路的响应即使成功也必须丢弃；当前代码在
-  `useFeedDetails.requestDetail` 的 key 和 Feed 的 `actionContext` 两处同时校验。
+- `useFeedDetails.requestDetail` 的 key 按账号/线路隔离、去重进行中的请求，本身不校验响应
+  是否仍可写入。详情/标签 effect 返回后检查组件仍挂载及 `actionContext` 的账号/线路；
+  动作返回后另由 `actionIsCurrent()` 校验完整动作上下文，防止旧结果更新当前反馈。
 - 标签过滤不是内容搜索：`normalizeTag` 只做大小写/空白归一，不做模糊匹配；
   未知标签按 `hideUntagged` 处理。
-- 相关推荐的第一版不做后台无限预取；详情面板关闭或条目切换后不保留跨线路结果。
+- 相关推荐不做后台无限预取；关闭详情面板或切换条目不会删除 `relatedByVideo` 中的旧键。
+  缓存留在当前 Feed 实例，读取按 `lineEpoch:curId` 隔离，不把旧线路键当作当前结果。
 - 评论/选集面板只在 `active` 且 `allowed` 时保持开放；被覆盖时关闭，不阻塞返回键
   或下层 Feed。
 
