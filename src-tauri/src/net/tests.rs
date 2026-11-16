@@ -157,7 +157,7 @@ async fn media_recovers_from_failed_system_dns() {
         .unwrap();
     refresh_client();
     CLIENTS.lock().unwrap().insert(
-        client_key(network_policy::strict_security(), host, port, false, &ProxyRoute::for_config(&crate::proxy::snapshot(), &target)),
+        client_key(crate::network_policy::strict_security(), host, port, false, &ProxyRoute::for_config(&crate::proxy::snapshot(), &target)),
         (Instant::now() + CLIENT_TTL, Arc::new(failed_client)),
     );
     let (_, bytes) = fetch_bytes(&raw).await.expect("备用 DNS 应恢复真实媒体下载");
