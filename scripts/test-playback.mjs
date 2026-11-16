@@ -177,6 +177,10 @@ async function seekChecks(page, legacy) {
   await clickProgress(page, .1);
   assert.equal((await getLogs(page)).length, 0, "Default-off must not record seeks");
   await page.getByRole("button", { name: "诊断设置", exact: true }).click();
+  const diagnostics = page.getByRole("button", { name: "播放诊断设置", exact: true });
+  assert.equal(await diagnostics.getAttribute("aria-expanded"), "false");
+  await diagnostics.click();
+  assert.equal(await diagnostics.getAttribute("aria-expanded"), "true");
   await page.getByRole("switch", { name: "播放诊断日志", exact: true }).click();
   await page.waitForFunction(() => document.querySelector('[aria-label="播放诊断日志"]').getAttribute("aria-checked") === "true");
   await page.getByRole("button", { name: "诊断设置", exact: true }).click();
