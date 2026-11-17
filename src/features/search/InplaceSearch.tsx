@@ -67,9 +67,7 @@ export function InplaceSearch({ kind, postLabel = "吃瓜帖", scope, onOpenVide
       </div>
 
       <div className="flex-1 scroll-y px-4 pt-3 pb-8">
-        {!submitted ? (
-          <div className="flex justify-center py-20"><span className="text-[13px] text-mut">输入关键词，在本栏目内搜索{label}</span></div>
-        ) : <>
+        {!submitted ? null : <>
           <div role="status" aria-live="polite" className="text-[12px] text-mut mb-2.5">
             {loading && <span className="block">{request?.page === 1 ? `正在搜索「${submitted}」…` : "正在加载更多…"}</span>}
             {result && <>「{result.keyword}」已加载 <span className="text-primary font-bold">{count}{result.total !== null ? ` / ${result.total}` : ""}</span> 条{label}</>}

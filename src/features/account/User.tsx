@@ -110,7 +110,7 @@ function FollowingContent({ onBack, wide }: { onBack: () => void; wide: boolean 
       </div>
     </div>
     <div ref={state.scroller} className="flex-1 scroll-y px-4 pt-3 pb-8">
-      {!user ? <Empty icon={<IUser size={26} />} title="登录后查看关注流" sub="关注喜欢的作者，第一时间看到他们的新作品" action="去登录" onAction={() => setLoginOpen(true)} />
+      {!user ? <Empty icon={<IUser size={26} />} title="登录后查看关注流" action="去登录" onAction={() => setLoginOpen(true)} />
         : state.loading && !state.items.length ? <div className="flex justify-center py-12"><Loader /></div>
         : state.err && !state.items.length ? <Empty icon={<IGrid size={26} />} title="关注流加载失败" sub={state.err} action="重试" onAction={() => void state.loadMore()} />
         : state.items.length ? <Masonry videos={state.items} scopeKey={`following:${accountScope}`} wide={wide} onOpen={video => push({ kind: "feed", videoIds: state.items.map(item => item.id), index: state.items.findIndex(item => item.id === video.id), title: "关注" })} />

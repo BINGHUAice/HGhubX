@@ -126,7 +126,6 @@ export default function Settings({ onBack, initialSection }: { onBack: () => voi
         <div ref={contentRef} className="ios-settings-column ios-settings-content">
           <div className="pt-1 pb-4">
             <h1 className="ios-page-title text-on">设置</h1>
-            <p className="text-[13px] text-mut mt-2">让 HGhubX 更合你的习惯</p>
           </div>
           {section("外观", <>
             <div className="ios-appearance-row items-center">
@@ -371,7 +370,6 @@ export default function Settings({ onBack, initialSection }: { onBack: () => voi
 
           <p className="text-[13px] text-on/70 leading-relaxed mt-4">
             基于 Rust + Tauri 2 构建的跨平台客户端，支持 Windows、macOS、Linux、Android 与 iOS。
-            界面采用 iOS 圆角与玻璃材质风格，播放器采用沉浸式竖屏信息流。
           </p>
 
           <Surface className="mt-4 rounded-(--r-sm) bg-s3/60 p-3 text-[12px] text-mut leading-relaxed">

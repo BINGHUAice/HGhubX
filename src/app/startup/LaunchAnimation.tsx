@@ -77,7 +77,6 @@ export function LaunchAnimation({ onFinish }: { onFinish: () => void }) {
       </div>
       <div className="hg-launch-wordmark"><span>HGhub</span><span className="hg-launch-word-x">X</span></div>
     </div>
-    <span className="hg-launch-footnote" aria-hidden="true">PRESS PLAY. FEEL MORE.</span>
   </div>;
 }
 

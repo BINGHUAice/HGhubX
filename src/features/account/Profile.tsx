@@ -160,9 +160,9 @@ function ProfileContent({ wide }: { wide: boolean }) {
         {/* 关注 / 我的主页 */}
         {user && (
           <CollectionLinks className="ios-profile-links mt-4">
-            <CollectionLink icon={<IHeart size={18} />} title="我的关注" subtitle="关注作者的更新"
+            <CollectionLink icon={<IHeart size={18} />} title="我的关注"
               onClick={() => push({ kind: "following" })} />
-            <CollectionLink icon={<IUserF size={18} />} title="我的主页" subtitle="我的作品与资料"
+            <CollectionLink icon={<IUserF size={18} />} title="我的主页"
               onClick={() => push({ kind: "user", id: user.id, name: user.nickname })} />
           </CollectionLinks>
         )}

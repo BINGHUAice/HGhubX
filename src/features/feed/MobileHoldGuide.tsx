@@ -89,7 +89,6 @@ function GuideContent({ target, bottomInset, onClose }: Omit<Props, "open">) {
           width={bounds.size} height={bounds.size} fill="rgb(15 19 30 / .42)" stroke="white" strokeWidth="2" />
       </svg>
       <div className="mobile-hold-guide-heading">
-        <span>长按手势</span>
         <h2>长按，按你的位置操作</h2>
         <p>按住约 0.4 秒，松开恢复原速度</p>
       </div>

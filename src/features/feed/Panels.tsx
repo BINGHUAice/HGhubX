@@ -11,9 +11,9 @@ import { Avatar, Empty } from "../../shared/ui/ui";
 import { IClose, IHeart, ISendF } from "../../shared/ui/icons";
 
 /* ================= 选集 ================= */
-export function EpisodesPanel({ videoId, episodes, current, onPick, onClose, bare = false }: {
+export function EpisodesPanel({ episodes, current, onPick, onClose, bare = false }: {
   videoId: number; episodes: Episode[]; current: number; onPick: (ep: number) => void; onClose: () => void;
-  /** 嵌在双栏抽屉里时，隐藏自带的标题栏与底注 */
+  /** 嵌在双栏抽屉里时，隐藏自带的标题栏 */
   bare?: boolean;
 }) {
   const [asc, setAsc] = useState(true);
@@ -46,7 +46,6 @@ export function EpisodesPanel({ videoId, episodes, current, onPick, onClose, bar
         </div>
         {!episodes.length && <div className="text-center text-[12px] text-dim py-8">暂无剧集</div>}
       </div>
-      {!bare && <div className="shrink-0 px-4 py-2.5 text-[12px] text-dim bg-s2/60">剧集 ID {videoId} · 点选即切换播放</div>}
     </div>
   );
 }
@@ -166,7 +165,7 @@ export function CommentsPanel({ videoId, ep, total, kind = "video", onClose }: {
         ) : error ? (
           <Empty icon={<IHeart size={22} />} title="评论加载失败" sub={error} action="重试" onAction={() => void load(1)} />
         ) : (
-          <Empty icon={<IHeart size={22} />} title="还没有评论" sub="来抢第一个沙发" />
+          <Empty icon={<IHeart size={22} />} title="还没有评论" />
         )}
         {items.length > 0 && (
           <div className="flex justify-center py-4">

@@ -32,7 +32,6 @@ export function TagBlockMenu({ open, tags, onClose, onSettings }: {
     <header className="content-tag-menu-header">
       <div className="min-w-0">
         <h2 className="text-[18px] font-bold text-on">不感兴趣</h2>
-        <p className="text-[12px] text-mut mt-1">选择不想看到的标签</p>
       </div>
       <Button aria-label="关闭不感兴趣" className="ios-icon-button" onClick={onClose}><IClose size={18} /></Button>
     </header>

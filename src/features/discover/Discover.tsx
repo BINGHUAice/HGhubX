@@ -413,7 +413,7 @@ export function TagPage({ tag, name, onBack, wide }: { tag: string; name: string
       <div ref={scrollContainer} className="flex-1 scroll-y px-4 pt-3 pb-8" aria-busy={videoLoading || postLoading || !currentVideos || !currentPosts}>
         <Surface className="mb-3 rounded-(--r-md) p-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="min-w-0 text-[13px] text-mut">{tagBlocked ? "此标签已加入屏蔽列表" : "不喜欢这类内容？可屏蔽整个标签。"}</p>
+            <p className="min-w-0 text-[13px] text-mut">{tagBlocked ? "此标签已加入屏蔽列表" : null}</p>
             <Button style={{ minBlockSize: 44 }} disabled={!tagBlocked && cannotAdd} aria-pressed={tagBlocked}
               onClick={() => tagBlocked ? unblockTag(name) : blockTags([name])}
               className="min-h-11 rounded-(--r-ctl) bg-s2 px-4 text-[13px] text-primary">{tagBlocked ? "取消屏蔽此标签" : "屏蔽此标签"}</Button>

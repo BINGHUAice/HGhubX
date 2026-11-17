@@ -138,9 +138,6 @@ export default function Search({ active, wide }: { active: boolean; wide: boolea
             )}
 
             <SearchTags key={JSON.stringify([lineEpoch, accountScope])} active={active} />
-            <p className="mt-3 text-[12px] text-dim leading-relaxed">
-              输入关键词后按回车搜索，也可以点上面的题材直接看片单。
-            </p>
           </>
         ) : (
           <>
@@ -190,9 +187,9 @@ export default function Search({ active, wide }: { active: boolean; wide: boolea
 
 /* ================= 排行榜 ================= */
 const RANK_TABS = [
-  { k: "hot", label: "热播榜", desc: "按热力指数排序" },
-  { k: "recommend", label: "推荐榜", desc: "按推荐值排序" },
-  { k: "potential", label: "潜力榜", desc: "按潜力值排序" },
+  { k: "hot", label: "热播榜" },
+  { k: "recommend", label: "推荐榜" },
+  { k: "potential", label: "潜力榜" },
 ] as const;
 
 export function RankPage({ onBack, wide }: { onBack: () => void; wide: boolean }) {
@@ -244,7 +241,6 @@ export function RankPage({ onBack, wide }: { onBack: () => void; wide: boolean }
                 <span className="w-9 h-9 rounded-(--r-sm) bg-pc text-on-pc flex items-center justify-center"><ITrophy size={20} /></span>
                 <h1 className="text-[24px] font-bold tracking-wide text-on">HGhubX 热榜</h1>
               </div>
-              <div className="text-[12px] text-mut mt-1">{meta.desc}</div>
             </div>
             <Button aria-label="刷新榜单" disabled={loading} onClick={() => void load(tab)} className="ios-icon-button">
               {loading ? <Loader label="正在更新榜单" className="w-4 h-4" /> : <IRefresh size={18} />}
@@ -273,7 +269,7 @@ export function RankPage({ onBack, wide }: { onBack: () => void; wide: boolean }
           </> : loading ? (
             <div className="flex justify-center py-12"><Loader label="正在加载榜单" className="w-8 h-8 spinner" /></div>
           ) : !err && (
-            <Empty icon={<ITrophy size={26} />} title="榜单暂时为空" sub="稍后再来看看，或者去首页刷刷推荐" />
+            <Empty icon={<ITrophy size={26} />} title="榜单暂时为空" />
           )}
         </section>
         {wide && <div className="h-2" />}

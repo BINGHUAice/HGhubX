@@ -13,9 +13,9 @@ import { Empty } from "../../shared/ui/ui";
 import { IBack, IChevR, IGlobe, IGrid, ISearch, ITrophy } from "../../shared/ui/icons";
 
 export const CHANNELS = [
-  { cate: "ai-duanju", name: "AI成人短剧", desc: "高能反转 · 一口气看完" },
-  { cate: "ai-manju", name: "AI成人漫剧", desc: "国创漫剧 · 每周更新" },
-  { cate: "original", name: "原创", desc: "原创 · 独家好剧" },
+  { cate: "ai-duanju", name: "AI成人短剧" },
+  { cate: "ai-manju", name: "AI成人漫剧" },
+  { cate: "original", name: "原创" },
 ] as const;
 
 /* ================= 分类总览 ================= */
@@ -87,26 +87,25 @@ export default function Category({ wide, active }: { wide: boolean; active: bool
       <div className="ios-page-heading shrink-0 px-4">
         <div className="flex items-end gap-2.5">
           <h1 className="ios-page-title text-on">分类</h1>
-          <span className="text-[12px] text-mut pb-0.5">{CHANNELS.length + 1} 个频道 · 每周持续上新</span>
+          <span className="text-[12px] text-mut pb-0.5">{CHANNELS.length + 1} 个频道</span>
         </div>
       </div>
 
       <div className="flex-1 scroll-y pb-24 pt-2">
         {/* 排行榜入口：只在移动端显示（底部导航没有排行榜，桌面侧栏已有） */}
         {!wide && (
-          <CollectionLink icon={<ITrophy size={18} />} title="排行榜" subtitle="热播榜 · 推荐榜 · 潜力榜"
+          <CollectionLink icon={<ITrophy size={18} />} title="排行榜"
             onClick={() => push({ kind: "ranks" })} className="mb-2.5 w-full" />
         )}
 
         {/* 专题 + 标签入口 */}
         <CollectionLinks className="ios-category-links mb-5">
-          <CollectionLink icon={<IGrid size={18} />} title="专题" subtitle="精选专辑合集"
+          <CollectionLink icon={<IGrid size={18} />} title="专题"
             onClick={() => push({ kind: "topics" })} />
-          <CollectionLink icon={<IGlobe size={18} />} title="标签" subtitle="按题材找片"
+          <CollectionLink icon={<IGlobe size={18} />} title="标签"
             onClick={() => push({ kind: "tags" })} />
         </CollectionLinks>
 
-        <p className="mb-3 text-[12px] text-mut">频道卡片可左右滑动浏览 · 点击“全部”查看完整频道</p>
         {CHANNELS.map((c, ci) => {
           const list = rows[c.cate] || [];
           return (
@@ -118,7 +117,6 @@ export default function Category({ wide, active }: { wide: boolean; active: bool
                 </span>
                 <span className="flex-1 min-w-0">
                   <span role="heading" aria-level={2} className="block text-[15.5px] font-semibold text-on leading-tight">{c.name}</span>
-                  <span className="block text-[12px] text-mut mt-0.5 truncate">{c.desc}</span>
                 </span>
                 <span className="flex items-center gap-0.5 text-[12px] text-mut group-hover:text-primary transition-colors">
                   全部<IChevR size={14} />
@@ -143,7 +141,6 @@ export default function Category({ wide, active }: { wide: boolean; active: bool
             </span>
             <span className="flex-1 min-w-0">
               <span role="heading" aria-level={2} className="block text-[15.5px] font-semibold text-on leading-tight">吃瓜</span>
-              <span className="block text-[12px] text-mut mt-0.5 truncate">圈内爆料 · 每日更新</span>
             </span>
             <span className="flex items-center gap-0.5 text-[12px] text-mut group-hover:text-primary transition-colors">
               全部<IChevR size={14} />

@@ -71,7 +71,6 @@ export function PostsPage({ onBack, wide }: { onBack: () => void; wide: boolean 
       <div className="shrink-0 flex items-center gap-2 px-2 bg-s1" style={{ paddingTop: "var(--sat, 0px)" }}>
         <Button aria-label="返回" onClick={onBack} className="w-9 h-9 rounded-full flex items-center justify-center text-on hover:bg-s3 pressable"><IBack size={19} /></Button>
         <h1 className="text-[15px] font-bold text-on">吃瓜</h1>
-        <span className="text-[12px] text-mut ml-1">圈内爆料 · 每日更新</span>
         <Button onClick={() => setSearching(true)} aria-label="搜索吃瓜" className="ml-auto w-9 h-9 rounded-full flex items-center justify-center text-on hover:bg-s3 pressable"><ISearch size={19} /></Button>
       </div>
       <div ref={scrollRef} aria-busy={loading} className="flex-1 scroll-y px-3 pt-3 pb-8">
@@ -88,7 +87,7 @@ export function PostsPage({ onBack, wide }: { onBack: () => void; wide: boolean 
         ) : err ? (
           <Empty icon={<IFireF size={26} />} title="吃瓜内容加载失败" sub={err} action="重试" onAction={() => loadMore(true)} />
         ) : (
-          <Empty icon={<IFireF size={26} />} title="暂无吃瓜内容" sub="稍后再来看看" />
+          <Empty icon={<IFireF size={26} />} title="暂无吃瓜内容" />
         )}
         <div ref={sentinel} className="h-10" />
         {err && items.length > 0 && (
