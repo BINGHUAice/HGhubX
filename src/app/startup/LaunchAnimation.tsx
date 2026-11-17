@@ -8,9 +8,10 @@ import { hasAcceptedAgreement } from "../../shared/storage/usageAgreement";
 // One reveal per WebView lifetime, including StrictMode and subsequent App remounts.
 let launchCompleted = false;
 export const LAUNCH_DURATION = 2200;
+export type RegisterStartupBack = (handler: () => void) => () => void;
 
 /** Exact hghubx.svg geometry, split into independent spring-animated strokes. */
-export function LaunchAnimation({ onFinish }: { onFinish: () => void }) {
+export function LaunchAnimation({ onFinish, registerBack }: { onFinish: () => void; registerBack?: RegisterStartupBack }) {
   const gradient = useId();
   const finishRef = useRef(onFinish);
   finishRef.current = onFinish;
@@ -31,7 +32,7 @@ export function LaunchAnimation({ onFinish }: { onFinish: () => void }) {
     };
     motion.addEventListener("change", onMotion);
     document.addEventListener("visibilitychange", onHidden);
-    window.addEventListener("keydown", onKey, true);
+    if (!registerBack) window.addEventListener("keydown", onKey, true);
     onHidden();
     return () => {
       window.clearTimeout(timer);
@@ -39,9 +40,10 @@ export function LaunchAnimation({ onFinish }: { onFinish: () => void }) {
       document.removeEventListener("visibilitychange", onHidden);
       window.removeEventListener("keydown", onKey, true);
     };
-  }, [finish]);
+  }, [finish, registerBack]);
 
   useEffect(() => {
+    if (registerBack) return registerBack(finish);
     if (platform !== "android") return;
     let disposed = false;
     let listener: { unregister: () => Promise<void> } | undefined;
@@ -50,7 +52,7 @@ export function LaunchAnimation({ onFinish }: { onFinish: () => void }) {
       else listener = handle;
     }).catch(() => {});
     return () => { disposed = true; void listener?.unregister().catch(() => {}); };
-  }, [finish]);
+  }, [finish, registerBack]);
 
   return <div className="hg-launch" role="dialog" aria-modal="true" aria-label="HGhubX 启动动画"
     onAnimationEnd={event => { if (event.target === event.currentTarget && event.animationName === "launch-exit") finish(); }}>
@@ -80,12 +82,20 @@ export function LaunchAnimation({ onFinish }: { onFinish: () => void }) {
   </div>;
 }
 
-/** Children mount only after the reveal and an explicitly accepted current agreement. */
-export default function StartupGate({ children }: { children: ReactNode }) {
+/** 首次使用：启动动画后先签署协议，签署前不挂载任何内容。
+ *  已同意过协议的用户：动画期间即挂载 App（提前选线 + 拉首条视频），
+ *  动画作为全屏覆盖层盖在上面，结束后自然淡出。 */
+export default function StartupGate({ children, registerBack }: { children: ReactNode; registerBack?: RegisterStartupBack }) {
   const [finished, setFinished] = useState(() => launchCompleted);
   const [agreed, setAgreed] = useState(() => hasAcceptedAgreement());
   const finish = useCallback(() => { launchCompleted = true; setFinished(true); }, []);
-  if (!finished) return <LaunchAnimation onFinish={finish} />;
-  if (!agreed) return <UsageAgreement onAccept={() => setAgreed(true)} />;
-  return children;
+  if (!agreed) {
+    return finished ? <UsageAgreement onAccept={() => setAgreed(true)} registerBack={registerBack} /> : <LaunchAnimation onFinish={finish} registerBack={registerBack} />;
+  }
+  return (
+    <>
+      {children}
+      {!finished && <LaunchAnimation onFinish={finish} registerBack={registerBack} />}
+    </>
+  );
 }
