@@ -51,8 +51,10 @@ export type Detail = {
 };
 
 export type PlayInfo = {
-  id: number;
-  ep_num: number;
+  id: number | string;
+  /** Current endpoints use ep, older endpoints use ep_num. Both may be strings. */
+  ep?: number | string;
+  ep_num?: number | string;
   duration: number;
   title: string;
   video_url: string;

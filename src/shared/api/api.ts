@@ -119,6 +119,7 @@ export const api = {
       base: string;
       strict_security?: boolean;
       cli_relaxed?: boolean;
+      pending_migration_identity?: { origin: string; user_id: number } | null;
     }>("app_boot"),
   securitySet: (strict: boolean) => call<boolean>("security_set", { strict }),
   login: (username: string, password: string) =>
