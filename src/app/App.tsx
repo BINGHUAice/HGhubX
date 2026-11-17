@@ -68,14 +68,14 @@ function StackPage(props: Parameters<typeof StackPageContent>[0]) {
   return <Suspense fallback={<PageLoading />}><StackPageContent {...props} /></Suspense>;
 }
 
-function StackPageContent({ page, onBack, wide, top, bottomInset }: {
-  page: Page; onBack: () => void; wide: boolean; top: boolean; bottomInset: number;
+function StackPageContent({ page, onBack, wide, top, bottomInset, loginOpen }: {
+  page: Page; onBack: () => void; wide: boolean; top: boolean; bottomInset: number; loginOpen: boolean;
 }) {
   if (page.kind === "feed") {
     return (
       <Feed videoIds={page.videoIds} startIndex={page.index} title={page.title} kind={page.feedKind || "video"}
         startEp={page.startEp} startTime={page.startTime}
-        mode="context" active={top} bottomInset={bottomInset} onBack={onBack} />
+        mode="context" active={top && !loginOpen} bottomInset={bottomInset} onBack={onBack} />
     );
   }
   if (page.kind === "channel") return <ChannelPage cate={page.cate} name={page.name} onBack={onBack} wide={wide} />;
@@ -111,7 +111,7 @@ function MainTabs({ wide, pageActive, bottomInset }: { wide: boolean; pageActive
 }
 
 function AppBody() {
-  const { platform, tab, setTab, stack, pop, loginOpen, setLoginOpen, fs, clean } = useStore();
+  const { platform, tab, setTab, stack, pop, loginOpen, setLoginOpen, fs, setFs, clean } = useStore();
   const mainRef = useRef<HTMLDivElement>(null);
   const [wide, setWide] = useState(false);
 
@@ -133,7 +133,7 @@ function AppBody() {
         return;
       }
       if (loginOpen) { if (e.key === "Escape") setLoginOpen(false); return; }
-      if (e.key === "Escape") { if (stack.length) pop(); return; }
+      if (e.key === "Escape") { if (fs) { setFs(false); return; } if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); return; } if (stack.length) pop(); return; }
       if (e.key === "/") { e.preventDefault(); setTab("search"); return; }
       if (["1", "2", "3", "4"].includes(e.key) && !e.repeat) {
         setTab((["home", "search", "category", "profile"] as Tab[])[Number(e.key) - 1]);
@@ -141,7 +141,7 @@ function AppBody() {
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, [stack.length, pop, setTab, loginOpen, setLoginOpen]);
+  }, [stack.length, pop, setTab, loginOpen, setLoginOpen, fs, setFs]);
 
   const pageActive = stack.length === 0 && !loginOpen;
   const bottomInset = fs || clean ? 0 : 74;
@@ -157,7 +157,7 @@ function AppBody() {
 
         {stack.map((p, i) => (
           <div key={p.key} inert={i !== stack.length - 1 || loginOpen} aria-hidden={i !== stack.length - 1 || loginOpen} className="absolute inset-0 z-30 bg-bg a-page-in" style={{ boxShadow: "-18px 0 40px rgba(0,0,0,.5)" }}>
-            <StackPage page={p} onBack={pop} wide={wide} top={i === stack.length - 1} bottomInset={stackInset} />
+            <StackPage page={p} onBack={pop} wide={wide} top={i === stack.length - 1} bottomInset={stackInset} loginOpen={loginOpen} />
           </div>
         ))}
 
@@ -190,7 +190,7 @@ function DesktopShell() {
 }
 
 function ShellInner({ collapsed, theater }: { collapsed: boolean; theater: boolean }) {
-  const { stack, pop, loginOpen, setLoginOpen, tab, setTab, platform } = useStore();
+  const { stack, pop, loginOpen, setLoginOpen, tab, setTab, platform, fs, setFs } = useStore();
   const mainRef = useRef<HTMLDivElement>(null);
   const [wide, setWide] = useState(true);
 
@@ -211,7 +211,7 @@ function ShellInner({ collapsed, theater }: { collapsed: boolean; theater: boole
         return;
       }
       if (loginOpen) { if (e.key === "Escape") setLoginOpen(false); return; }
-      if (e.key === "Escape") { if (stack.length) pop(); return; }
+      if (e.key === "Escape") { if (fs) { setFs(false); return; } if (document.fullscreenElement) { document.exitFullscreen().catch(() => {}); return; } if (stack.length) pop(); return; }
       if (e.key === "/") { e.preventDefault(); setTab("search"); return; }
       if (["1", "2", "3", "4"].includes(e.key) && !e.repeat) {
         setTab((["home", "search", "category", "profile"] as Tab[])[Number(e.key) - 1]);
@@ -219,7 +219,7 @@ function ShellInner({ collapsed, theater }: { collapsed: boolean; theater: boole
     };
     window.addEventListener("keydown", fn);
     return () => window.removeEventListener("keydown", fn);
-  }, [stack.length, pop, setTab, loginOpen, setLoginOpen]);
+  }, [stack.length, pop, setTab, loginOpen, setLoginOpen, fs, setFs]);
 
   const pageActive = stack.length === 0 && !loginOpen;
 
@@ -230,7 +230,7 @@ function ShellInner({ collapsed, theater }: { collapsed: boolean; theater: boole
         <MainTabs wide={wide} pageActive={pageActive} bottomInset={14} />
         {stack.map((p, i) => (
           <div key={p.key} inert={i !== stack.length - 1 || loginOpen} aria-hidden={i !== stack.length - 1 || loginOpen} className="absolute inset-0 z-30 bg-bg win-page-in" style={{ boxShadow: "-18px 0 40px rgba(0,0,0,.5)" }}>
-            <StackPage page={p} onBack={pop} wide={wide} top={i === stack.length - 1} bottomInset={14} />
+            <StackPage page={p} onBack={pop} wide={wide} top={i === stack.length - 1} bottomInset={14} loginOpen={loginOpen} />
           </div>
         ))}
       </div>

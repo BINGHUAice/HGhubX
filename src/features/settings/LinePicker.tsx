@@ -179,7 +179,7 @@ export default function LinePicker({ open, onClose }: { open: boolean; onClose: 
   const close = () => { if (!applying.current) onClose(); };
 
   const body = (
-    <div className="flex flex-col min-h-0" style={{ maxHeight: isMobile ? "74vh" : "min(72vh, 620px)" }}>
+    <div className="flex flex-col min-h-0" style={{ maxHeight: isMobile ? "74dvh" : "min(72dvh, 620px)" }}>
       <div className="shrink-0 flex items-center gap-2 px-4 pt-3 pb-2">
         <span className="w-8 h-8 rounded-full bg-s3 flex items-center justify-center text-primary"><ISettings size={16} /></span>
         <div className="flex-1 min-w-0">
@@ -264,7 +264,7 @@ export default function LinePicker({ open, onClose }: { open: boolean; onClose: 
         </Surface>
 
         <div className="text-[12px] text-dim leading-relaxed px-1 mt-4">
-          切换后立即生效，请求链路与数据模型不变。这里的「检测」只探这一次；
+          切换后立即生效。这里的「检测」只探这一次；
           日常的自动选线在 设置 → 网络 → 自动选择线路。
         </div>
       </div>

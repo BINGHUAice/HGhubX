@@ -15,6 +15,7 @@ type Props = {
   volume: number;
   theater?: boolean;
   fullscreen?: boolean;
+  dockInset?: number;
   visible?: boolean;
   seekEnabled?: boolean;
   seekKey?: string;
@@ -38,7 +39,7 @@ type Props = {
 const formatClock = (s: number) => fmtTime(Math.max(0, s || 0)).padStart(5, "0");
 
 export default function PlayerControls({
-  paused, clock, duration, buffered = 0, rate, muted, volume, theater = false, fullscreen = false,
+  paused, clock, duration, buffered = 0, rate, muted, volume, theater = false, fullscreen = false, dockInset = 0,
   visible = true, seekEnabled = true, seekKey, nextDisabled = false, nextTitle = "下一个", swipeEp = false, onToggle, onSeek, onSeekInteraction, onRate, onMute, onVolume, onPip, onLock, onTheater, onFullscreen, onNext, onToggleSwipe,
 }: Props) {
   const [speedOpen, setSpeedOpen] = useState(false);
@@ -58,6 +59,7 @@ export default function PlayerControls({
 
   return (
     <div ref={boxRef} className={`desktop-controls ${fullscreen ? "is-fullscreen" : ""} ${visible ? "" : "is-hidden"}`}
+      style={{ right: dockInset, transition: "right .3s cubic-bezier(.2,0,0,1)" }}
       onPointerDown={(e) => e.stopPropagation()}
       onKeyDown={event => {
         // Native button activation must not also toggle Feed's playback shortcut.

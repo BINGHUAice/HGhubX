@@ -866,12 +866,18 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
   const exitFs = useCallback(() => {
     setClean(false);
     setFs(false);
+  }, [setClean, setFs]);
+
+  /* Leaving immersive fullscreen from any path (hardware back, Esc) must restore
+     orientation and playback protection, not only the in-player control. */
+  const wasFs = useRef(false);
+  useEffect(() => {
+    const entered = wasFs.current; wasFs.current = fs;
+    if (!entered || fs || isDesktop) return;
     keepAlive();
-    if (!isDesktop) {
-      try { void invoke("set_orientation", { landscape: false }); } catch { /* ignore */ }
-      try { screen.orientation?.unlock?.(); } catch { /* ignore */ }
-    }
-  }, [isDesktop, keepAlive, setClean, setFs]);
+    try { void invoke("set_orientation", { landscape: false }); } catch { /* ignore */ }
+    try { screen.orientation?.unlock?.(); } catch { /* ignore */ }
+  }, [fs, isDesktop, keepAlive]);
 
   /* 若用户在视频首帧宽高解析出来前已点进全屏，解析出横屏后自动补发横屏方向请求 */
   useEffect(() => {
@@ -1227,7 +1233,7 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
                     transition: "opacity .38s cubic-bezier(.4,0,.2,1), transform .38s cubic-bezier(.4,0,.2,1)",
                   }}>
                   <div className={landscapeVideo
-                    ? "inline-flex items-center gap-0.5 h-8 px-1 rounded-full backdrop-blur-xl elev-2 whitespace-nowrap"
+                    ? "inline-flex items-center gap-0.5 min-h-8 px-1 rounded-full backdrop-blur-xl elev-2 whitespace-nowrap"
                     : "flex flex-col items-stretch gap-1 p-1 rounded-[18px] backdrop-blur-xl elev-2"}
                     style={{ background: "rgba(12,15,22,.58)", boxShadow: "inset 0 0 0 1px rgba(255,255,255,.09)" }}>
                     {landscapeVideo && (
@@ -1476,6 +1482,7 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
           visible={active && !idle}
           seekEnabled={active && !controlsLocked}
           seekKey={playKey}
+          dockInset={panel ? 372 : 0}
           nextDisabled={!episodes.some((e) => e.ep_num === curEp + 1) && index >= effectiveVideoIds.length - 1}
           nextTitle={episodes.some((e) => e.ep_num === curEp + 1) ? "下一集 E" : "下一部 ↓"}
           swipeEp={swipeEp}
@@ -1598,14 +1605,14 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
         <>
           {/* 评论：移动端底部弹层（右侧操作栏「评论」入口） */}
           <Sheet open={active && panel === "comments"} onClose={() => setPanel(null)}>
-            <div className="flex flex-col" style={{ height: "72vh" }}>
+            <div className="flex flex-col" style={{ height: "72dvh" }}>
               <CommentsPanel videoId={curId} ep={curEp} total={meta.comment} kind={kind} onClose={() => setPanel(null)} />
             </div>
           </Sheet>
 
           {/* 吃瓜图文正文 */}
           <Sheet open={active && panel === "article"} onClose={() => setPanel(null)}>
-            <div className="flex flex-col" style={{ height: "78vh" }}>
+            <div className="flex flex-col" style={{ height: "78dvh" }}>
               <ArticlePanel title={meta.title} html={articleHtml} cover={meta.cover} hot={post?.hot} onClose={() => setPanel(null)} />
             </div>
           </Sheet>
