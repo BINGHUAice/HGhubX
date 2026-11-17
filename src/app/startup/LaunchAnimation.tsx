@@ -4,6 +4,7 @@ import { platform } from "../../shared/api/api";
 import "../../styles/launch.css";
 import UsageAgreement from "../../shared/ui/UsageAgreement";
 import { hasAcceptedAgreement } from "../../shared/storage/usageAgreement";
+import { holdBackForStartup } from "../../shared/lib/back";
 
 // One reveal per WebView lifetime, including StrictMode and subsequent App remounts.
 let launchCompleted = false;
@@ -89,6 +90,10 @@ export default function StartupGate({ children, registerBack }: { children: Reac
   const [finished, setFinished] = useState(() => launchCompleted);
   const [agreed, setAgreed] = useState(() => hasAcceptedAgreement());
   const finish = useCallback(() => { launchCompleted = true; setFinished(true); }, []);
+  // Overlay branch only: while the reveal covers the already-mounted App, back
+  // belongs to the animation (skip it); runBack() must not navigate beneath it.
+  // Released on overlay unmount; StrictMode-safe via the idempotent release.
+  useEffect(() => (agreed && !finished ? holdBackForStartup() : undefined), [agreed, finished]);
   if (!agreed) {
     return finished ? <UsageAgreement onAccept={() => setAgreed(true)} registerBack={registerBack} /> : <LaunchAnimation onFinish={finish} registerBack={registerBack} />;
   }
