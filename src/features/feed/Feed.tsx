@@ -1138,7 +1138,7 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
                   diagnosticContext={{ active: active && !tagMenu && !showHoldGuide, view: mode, kind, video_id: curId, episode: curEp }}
                   volume={volume} rate={effRate}
                   measurementKey={measurementKey}
-                  fit={isDesktop ? "contain" : landscapeVideo ? (fs || vpLandscape ? "contain" : portraitFit) : (!videoSize.w || !videoSize.h || vpLandscape ? "contain" : "cover")}
+                  fit={!isDesktop && landscapeVideo && !fs && !vpLandscape ? portraitFit : "contain"}
                   onClick={() => { if (isDesktop) videoRef.current?.toggle(); }}
                   onTime={onTimeTick}
                   onDuration={onDurationTick}
