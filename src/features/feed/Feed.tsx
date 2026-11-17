@@ -2,6 +2,7 @@ import { Button, Image, SegmentedControl } from "../../shared/ui/ios/controls";
 import { Loader } from "../../shared/ui/ios/effects";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useFsOrientation } from "../playback/useFsOrientation";
 import { api, cover, fmt, fmtTime, isMobile, logLine } from "../../shared/api/api";
 import type { Detail, Episode, PlayInfo, Post, VideoCard } from "../../shared/api/types";
 import { useStore } from "../../shared/model/store";
@@ -868,16 +869,7 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
     setFs(false);
   }, [setClean, setFs]);
 
-  /* Leaving immersive fullscreen from any path (hardware back, Esc) must restore
-     orientation and playback protection, not only the in-player control. */
-  const wasFs = useRef(false);
-  useEffect(() => {
-    const entered = wasFs.current; wasFs.current = fs;
-    if (!entered || fs || isDesktop) return;
-    keepAlive();
-    try { void invoke("set_orientation", { landscape: false }); } catch { /* ignore */ }
-    try { screen.orientation?.unlock?.(); } catch { /* ignore */ }
-  }, [fs, isDesktop, keepAlive]);
+  useFsOrientation(fs, isDesktop, keepAlive);
 
   /* 若用户在视频首帧宽高解析出来前已点进全屏，解析出横屏后自动补发横屏方向请求 */
   useEffect(() => {
