@@ -253,6 +253,11 @@ pub fn playback_log_write(entries: Vec<Entry>) -> Result<(), String> {
 pub fn playback_log_read() -> Result<String, String> {
     let log = LOG.lock().map_err(|_| "日志锁失败")?;
     let dir = log.dir.as_ref().ok_or("日志目录尚未初始化")?;
+    export(dir)
+}
+
+// 纯函数：从目录组装并裁剪导出。不依赖全局 LOG，便于并行单测直接验证尺寸上限。
+fn export(dir: &Path) -> Result<String, String> {
     let base = crate::net::base();
     let host = base.split("://").nth(1).unwrap_or(&base);
     let host = host.split('/').next().unwrap_or(host);
@@ -473,7 +478,6 @@ mod tests {
             SEQ.fetch_add(1, Ordering::Relaxed)
         ));
         fs::create_dir_all(&dir).unwrap();
-        bind(&dir);
         // 两份接近上限的日志，拼起来远超安卓 Binder 单次事务的安全尺寸（issue #142）。
         let line = json!({
             "ts": "2026-11-17T00:00:00Z", "pid": 1, "seq": 1,
@@ -488,7 +492,7 @@ mod tests {
         assert!(big.len() as u64 <= MAX_FILE + 16384);
         fs::write(dir.join("playback.previous.log"), &big).unwrap();
         fs::write(dir.join("playback.log"), &big).unwrap();
-        let text = playback_log_read().unwrap();
+        let text = export(&dir).unwrap();
         assert!(text.len() <= MAX_EXPORT + 4096, "导出超出剪贴板安全尺寸: {}", text.len());
         assert!(text.contains("\"diagnostics.env\""), "环境头必须保留");
         assert!(text.contains("\"log.truncated\""), "超限必须插裁剪说明");
@@ -499,13 +503,9 @@ mod tests {
         // 小日志不裁剪，原样导出。
         fs::write(dir.join("playback.previous.log"), "").unwrap();
         fs::write(dir.join("playback.log"), format!("{line}\n")).unwrap();
-        let small = playback_log_read().unwrap();
+        let small = export(&dir).unwrap();
         assert!(!small.contains("\"log.truncated\""));
         assert!(small.contains("web.seek.request"));
-        bind(&dir);
-        let mut log = LOG.lock().unwrap();
-        *log = Journal::default();
-        ENABLED.store(false, Ordering::Relaxed);
         fs::remove_dir_all(dir).unwrap();
     }
 }
