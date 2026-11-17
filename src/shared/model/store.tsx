@@ -272,7 +272,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }).catch(() => { /* 离线也能用 */ });
     };
     readBoot();
-    const changed = () => { accountRef.current.setUser(null); readBoot(); };
+    // 切线/代理变化后由 boot 决定会话：可信线路间后端保留登录（rebase），
+    // 不再先 setUser(null) 闪退；不可信/自定义切线后端已清会话，boot 返回 null 正常登出。
+    const changed = () => { readBoot(); };
     window.addEventListener("hg:line-changed", changed);
     window.addEventListener("hg:proxy-changed", changed);
     return () => {
