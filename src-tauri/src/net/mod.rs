@@ -40,7 +40,7 @@ use std::time::{Duration, Instant};
 /// 默认上游（固定线路 1）。
 pub const DEFAULT_BASE: &str = "https://huangguoai.com";
 
-/// 当前上游基址（不带结尾斜杠）。可在设置里切到固定线路 2 或镜像线路，运行时立即生效。
+/// 当前上游基址（不带结尾斜杠）。可在设置里切到可信镜像或自定义线路，运行时立即生效。
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct LineConfig {
     base: String,

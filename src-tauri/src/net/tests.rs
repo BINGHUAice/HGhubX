@@ -421,7 +421,9 @@ fn base_requires_https_origin_and_auth_trust_is_static() {
         assert_eq!(normalize_base(raw), None, "{raw}");
     }
     assert!(trusted_auth_origin(DEFAULT_BASE));
-    assert!(trusted_auth_origin("https://huangguoai.ai"));
+    // huangguoai.ai is a navigation landing page (API returns nginx 404);
+    // it is not an API line and must not carry credential trust.
+    assert!(!trusted_auth_origin("https://huangguoai.ai"));
     assert!(!trusted_auth_origin("https://mirror.example"));
     assert!(!trusted_auth_origin("https://huangguoai.com.evil.example"));
 }

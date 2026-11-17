@@ -151,11 +151,28 @@ fn request_ios_orientation(landscape: bool) {
 #[tauri::command]
 pub async fn app_boot(state: State<'_, Api>) -> Result<Value, String> {
     let origin = base();
-    if crate::network_policy::strict_security()
-        && state.session.token(&origin).is_some()
-        && !crate::net::trusted_auth_origin(&origin)
-    {
-        let _ = crate::lines::verify_published_origin(&origin).await;
+    if crate::network_policy::strict_security() {
+        // A session persisted on a previous line may follow a trusted switch
+        // that happened before boot (e.g. auto line selection in an earlier
+        // process wrote line.json). Verify the CURRENT origin first so the
+        // publisher refresh fills TRUSTED_MIRRORS, then rebase the old-origin
+        // session onto it only when both ends are credential-trusted.
+        let stored = state.session.stored_origin();
+        if state.session.token(&origin).is_none()
+            && stored.as_deref().is_some_and(|old| old != origin)
+        {
+            let _ = crate::lines::verify_published_origin(&origin).await;
+            // Both ends must be fixed/publisher-confirmed in this process;
+            // otherwise the session stays on its old origin and boot reports
+            // logged-out for the current line (fail closed).
+            let _ = state
+                .session
+                .rebase_if_trusted(&origin, super::lines::trusted_line_origin);
+        } else if state.session.token(&origin).is_some()
+            && !crate::net::trusted_auth_origin(&origin)
+        {
+            let _ = crate::lines::verify_published_origin(&origin).await;
+        }
     }
     let origin = base();
     let credentials_allowed = !crate::network_policy::strict_security()

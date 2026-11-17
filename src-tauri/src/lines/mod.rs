@@ -225,7 +225,9 @@ mod tests {
     #[test]
     fn auto_candidates_require_publication_and_exclude_ai_landing_page() {
         let items = [
-            json!({"url": FIXED[1].1}),
+            // The .ai navigation page must stay out of candidates even if a
+            // publish page lists it; it is no longer a fixed line.
+            json!({"url": "https://huangguoai.ai"}),
             json!({"url": "https://published.example"}),
             json!({"url": "https://untrusted.example"}),
             json!({"url": "https://published.example"}),

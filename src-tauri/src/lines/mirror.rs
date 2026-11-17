@@ -10,9 +10,10 @@ use std::time::{Duration, Instant};
 
 use super::jsparse::js_array;
 
-pub const FIXED: [(&str, &str); 2] = [
+// huangguoai.ai is only a navigation/landing page: every /api/* call there is
+// an nginx 404, so it is not an API line and carries no credential trust.
+pub const FIXED: [(&str, &str); 1] = [
     ("固定线路 1", "https://huangguoai.com"),
-    ("固定线路 2", "https://huangguoai.ai"),
 ];
 pub(crate) const PUBLISH_PAGES: [&str; 2] = [
     "https://huangguoai.pages.dev/",
