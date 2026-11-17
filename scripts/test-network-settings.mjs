@@ -49,8 +49,12 @@ try {
         if (command === "line_mirrors") return { source: "fixture", recommended: [], items: [{ url: "https://published.fixture.invalid" }] };
         if (command === "line_custom_set" || command === "line_reset" || command === "line_set") {
           const next = command === "line_reset" ? MAIN : args.url;
-          if (next !== fixture.base) fixture.loggedIn = false;
-          fixture.base = next; fixture.custom = command === "line_custom_set" && next !== MAIN;
+          const custom = command === "line_custom_set" && next !== MAIN;
+          // Rust contract: custom sites never rebase (always clear); trusted↔trusted
+          // (fixed main / published mirror) rebases and keeps the login.
+          const trusted = url => url === MAIN || url === "https://published.fixture.invalid";
+          if (next !== fixture.base && (custom || fixture.custom || !trusted(next))) fixture.loggedIn = false;
+          fixture.base = next; fixture.custom = custom;
           return command === "line_set" ? fixture.base : { base: fixture.base, custom: fixture.custom };
         }
         if (command === "proxy_state") {

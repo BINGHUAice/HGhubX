@@ -70,7 +70,10 @@ try {
             fixture.generation++;
             if (fixture.failSet) throw "fixture: line rejected";
             fixture.base = args.url;
-            fixture.loggedIn = false;
+            // Mirrors the Rust contract: fixed/published-mirror switches rebase the
+            // session (login survives); any other target clears it.
+            const trusted = url => url === MAIN || url === MIRROR || url === "https://mirror-two.fixture.invalid" || url === "https://secondary.fixture.invalid";
+            if (!trusted(fixture.base)) fixture.loggedIn = false;
             return fixture.base;
           }
           if (command === "line_cancel") { fixture.generation++; return; }
@@ -90,7 +93,7 @@ try {
             }
             if (mode === "all-down") return { previous, base: previous, switched: false, cancelled: false, pick: { base: previous, tier: "none", ms: 0, reason: "all-down", candidates: [] } };
             fixture.base = MIRROR;
-            fixture.loggedIn = false;
+            // MAIN and MIRROR are both credential-trusted: auto switch rebases, keeps login.
             return { previous, base: MIRROR, switched: previous !== MIRROR, cancelled: false, pick: { base: MIRROR, tier: "mirror", ms: 34, reason: "mirror-fallback", candidates: [{ tier: "mirror", url: MIRROR, ok: true, reachable: true, ms: 34, status: 200 }] } };
           }
           throw new Error(`Unexpected IPC: ${command}`);
@@ -149,9 +152,9 @@ try {
     assert.equal(await dialog.getByText("recommended.fixture.invalid", { exact: true }).count(), 0);
     assert.equal((await calls(page, "line_mirrors")).length, 1);
     await dialog.getByRole("button").filter({ hasText: "mirror-one.fixture.invalid" }).click();
-    await page.waitForFunction(() => window.lineSelectionFixture.base === "https://mirror-one.fixture.invalid" && window.lineSelectionSnapshot.lineEpoch === 1);
+    await page.waitForFunction(() => window.lineSelectionFixture.base === "https://mirror-one.fixture.invalid" && window.lineSelectionSnapshot.lineEpoch === 1 && window.lineSelectionSnapshot.user?.id === 17);
     assert.equal(await page.evaluate(() => window.lineSelectionFixture.lineChanged), 1);
-    assert.equal(await page.evaluate(() => window.lineSelectionSnapshot.user), null);
+    assert.equal(await page.evaluate(() => window.lineSelectionSnapshot.user?.id), 17);
     assert.deepEqual((await calls(page, "line_set")).map(call => call.args), [{ url: MIRROR }]);
     await dialog.getByRole("button", { name: "关闭", exact: true }).click();
     await sourceButton(page).getByText("mirror-one.fixture.invalid", { exact: true }).waitFor();
@@ -159,7 +162,7 @@ try {
     await dialog.waitFor();
     assert.equal((await calls(page, "line_mirrors")).length, 1);
     await page.screenshot({ path: join(output, mobile ? "line-picker-android.png" : "line-picker-desktop.png"), fullPage: true, animations: "disabled" });
-    report.passed.push(`${mobile ? "Android-sized sheet" : "Desktop dialog"}: Expanding network settings opens the real picker; fixed and published mirror rows load without legacy-only recommendations; successful selection updates current line, store epoch and settings host and clears stale user UI`);
+    report.passed.push(`${mobile ? "Android-sized sheet" : "Desktop dialog"}: Expanding network settings opens the real picker; fixed and published mirror rows load without legacy-only recommendations; successful selection updates current line, store epoch and settings host while the trusted-line rebase keeps the logged-in user`);
     await context.close();
   }
 
