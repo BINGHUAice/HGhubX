@@ -14,20 +14,20 @@ import { createServer as createViteServer } from "vite";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const { values: args } = parseArgs({ options: {
   "media-dir": { type: "string" }, output: { type: "string" }, "browser-executable": { type: "string" },
-  scenarios: { type: "string", default: "seek,legacy,stall,lifecycle,mms,gesture,proxy" }, help: { type: "boolean" },
+  scenarios: { type: "string", default: "seek,legacy,stall,lifecycle,mms,gesture,proxy,portrait-fit" }, help: { type: "boolean" },
 } });
 if (args.help) {
-  console.log("pnpm test:playback [--media-dir DIR] [--output NEW_DIR] [--browser-executable PATH] [--scenarios seek,legacy,stall,lifecycle,mms,gesture,proxy,ios-native,recovery,review]");
+  console.log("pnpm test:playback [--media-dir DIR] [--output NEW_DIR] [--browser-executable PATH] [--scenarios seek,legacy,stall,lifecycle,mms,gesture,proxy,portrait-fit,ios-native,recovery,review]");
   process.exit(0);
 }
 const scenarios = args.scenarios.split(",");
-assert(scenarios.length && scenarios.every(s => ["seek", "legacy", "stall", "lifecycle", "mms", "gesture", "proxy", "ios-native", "recovery", "review"].includes(s)), "Unknown scenario");
+assert(scenarios.length && scenarios.every(s => ["seek", "legacy", "stall", "lifecycle", "mms", "gesture", "proxy", "portrait-fit", "ios-native", "recovery", "review"].includes(s)), "Unknown scenario");
 const output = resolve(args.output || join(root, "test-results", "playback", new Date().toISOString().replace(/[:.]/g, "-")));
 await mkdir(dirname(output), { recursive: true });
 await mkdir(output); // Refuse to overwrite artifacts from an earlier run.
 const jsonl = (file, entry) => appendFileSync(file, JSON.stringify({ ts: new Date().toISOString(), ...entry }) + "\n");
 const report = { started: new Date().toISOString(), platform: process.platform, browser: "chromium", transport: "browser fixture; not Tauri/WKWebView", output, cases: [] };
-let temporaryMedia, vite, media, browser;
+let temporaryMedia, temporaryPortraitMedia, vite, media, portraitMedia, browser;
 let nextRequest = 0;
 const requests = new Set();
 // hls.js 的 worker/XHR 会直接请求 Linux 本机媒体代理；测试里统一映射到临时 fixture server。
@@ -70,6 +70,8 @@ async function serveMedia(dir) {
 }
 
 const getLogs = page => page.evaluate(async () => { await window.playerSeekFixture.flushLogs(); return window.playerSeekFixture.logs; });
+// 本地 VOD HLS fixture：testsrc2 + 正弦音轨。size 决定横屏（320x180）或竖屏（360x640）源。
+const generateHlsFixture = (dir, size) => execFileSync(process.env.FFMPEG_PATH || "ffmpeg", ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", `testsrc2=size=${size}:rate=15`, "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100", "-t", "90", "-c:v", "libx264", "-preset", "ultrafast", "-g", "30", "-sc_threshold", "0", "-pix_fmt", "yuv420p", "-c:a", "aac", "-f", "hls", "-hls_time", "2", "-hls_playlist_type", "vod", "-hls_segment_filename", join(dir, "seg%03d.ts"), join(dir, "list.m3u8")], { timeout: 60000, stdio: "pipe" });
 async function waitLog(page, event, source) {
   await page.waitForFunction(({ event, source }) => window.playerSeekFixture.logs.some(e => e.event === event && (!source || e.data.source === source)), { event, source });
   return getLogs(page);
@@ -176,6 +178,52 @@ async function gestureChecks(page) {
   await page.waitForFunction(paused => document.querySelector('video').paused !== paused, wasPaused);
   assert.equal(await clean(), 'false', 'Double tap restores chrome and toggles playback once');
   return {singleTapMs};
+}
+
+// issue #142 回归：手机竖屏视口 + 真实竖屏源（360x640，高>宽）。
+// fit 判定只认解码后的 videoWidth/videoHeight（VideoSurface onSize → Feed vsize），
+// 所以必须等真实元数据落地后再断言 computed object-fit：
+//   修复前：landscapeVideo=false 且已测量、非全屏、vpLandscape=false → "cover"（裁切铺满）→ 断言失败；
+//   修复后：竖屏视频一律 "contain"（保留原始比例）→ 断言通过。
+// 第二段用横屏源验证「铺满/适应」切换链路未被修复破坏（该分支修复前后行为一致）。
+async function portraitFitChecks(page) {
+  const open = proxy => page.goto(`${report.ui}/tests/player-seek.html?diagnostics=1&portrait-fit=1&proxy=${encodeURIComponent(proxy)}`);
+  // onSize 是原生媒体事件里的 React 更新；双 rAF 保证 setVsize 已提交到 DOM（帧同步，非任意 sleep）。
+  const afterCommit = () => page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(() => done(undefined)))));
+  const objectFit = () => page.locator("video").evaluate(v => getComputedStyle(v).objectFit);
+
+  await open(report.portraitMedia);
+  const guide = page.getByRole("dialog", { name: "视频长按操作提示", exact: true });
+  await guide.waitFor({ state: "visible" });
+  await guide.getByRole("button", { name: "知道了", exact: true }).click();
+  await guide.waitFor({ state: "hidden" });
+  await page.waitForFunction(() => {
+    const v = document.querySelector("video");
+    return v && v.videoWidth === 360 && v.videoHeight === 640 && v.currentTime > 1 && !v.paused;
+  });
+  await afterCommit();
+  const portrait = await page.locator("video").evaluate(v => ({
+    objectFit: getComputedStyle(v).objectFit, videoWidth: v.videoWidth, videoHeight: v.videoHeight,
+  }));
+  assert(portrait.videoHeight > portrait.videoWidth, "Fixture must decode a portrait source (h > w) to reach the portrait branch");
+  assert.equal(portrait.objectFit, "contain", "Portrait video must keep its original aspect ratio (issue #142), not crop with object-cover");
+  // 「铺满」按钮只在 landscapeVideo=true 时渲染；它不存在证明确实走了竖屏分支。
+  assert.equal(await page.getByRole("button", { name: "铺满", exact: true }).count(), 0, "Portrait source must not offer the landscape fill toggle");
+
+  // 同一手机竖屏视口换横屏源（320x180）：默认 contain，铺满→cover，适应→contain。
+  await open(report.media);
+  await page.waitForFunction(() => {
+    const v = document.querySelector("video");
+    return v && v.videoWidth === 320 && v.videoHeight === 180 && v.currentTime > 1 && !v.paused;
+  });
+  await afterCommit();
+  assert.equal(await objectFit(), "contain", "Landscape video in a portrait viewport must default to contain");
+  await page.getByRole("button", { name: "铺满", exact: true }).click();
+  await page.waitForFunction(() => getComputedStyle(document.querySelector("video")).objectFit === "cover");
+  await page.getByRole("button", { name: "适应", exact: true }).click();
+  await page.waitForFunction(() => getComputedStyle(document.querySelector("video")).objectFit === "contain");
+  return { viewport: "390x844", portrait_source: "360x640", portrait_object_fit: portrait.objectFit,
+    landscape_default_fit: "contain", landscape_toggle: ["contain", "cover", "contain"] };
 }
 
 async function seekChecks(page, legacy) {
@@ -560,13 +608,16 @@ try {
     let mediaDir = args["media-dir"] && resolve(args["media-dir"]);
     if (!mediaDir) {
       temporaryMedia = await mkdtemp(join(tmpdir(), "hghubx-playback-")); mediaDir = temporaryMedia;
-      try {
-        execFileSync(process.env.FFMPEG_PATH || "ffmpeg", ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=15", "-f", "lavfi", "-i", "sine=frequency=440:sample_rate=44100", "-t", "90", "-c:v", "libx264", "-preset", "ultrafast", "-g", "30", "-sc_threshold", "0", "-pix_fmt", "yuv420p", "-c:a", "aac", "-f", "hls", "-hls_time", "2", "-hls_playlist_type", "vod", "-hls_segment_filename", join(mediaDir, "seg%03d.ts"), join(mediaDir, "list.m3u8")], { timeout: 60000, stdio: "pipe" });
-      } catch { throw new Error("Cannot generate HLS fixture: install FFmpeg (libx264/AAC), set FFMPEG_PATH, or pass --media-dir DIR"); }
+      try { generateHlsFixture(mediaDir, "320x180"); } catch { throw new Error("Cannot generate HLS fixture: install FFmpeg (libx264/AAC), set FFMPEG_PATH, or pass --media-dir DIR"); }
     }
     vite = await createViteServer({ root, server: { host: "127.0.0.1", port: 0, strictPort: false, hmr: false, open: false } });
     await vite.listen(); report.ui = `http://127.0.0.1:${vite.httpServer.address().port}`;
     media = await serveMedia(mediaDir); report.media = `http://127.0.0.1:${media.address().port}`;
+    if (scenarios.includes("portrait-fit")) {
+      temporaryPortraitMedia = await mkdtemp(join(tmpdir(), "hghubx-playback-portrait-"));
+      try { generateHlsFixture(temporaryPortraitMedia, "360x640"); } catch { throw new Error("Cannot generate portrait HLS fixture: install FFmpeg (libx264/AAC) or set FFMPEG_PATH"); }
+      portraitMedia = await serveMedia(temporaryPortraitMedia); report.portraitMedia = `http://127.0.0.1:${portraitMedia.address().port}`;
+    }
     browser = await chromium.launch({ headless: true, executablePath: args["browser-executable"], args: ["--autoplay-policy=no-user-gesture-required"] });
     report.browser_version = browser.version();
   }
@@ -599,7 +650,8 @@ try {
       }
       continue;
     }
-    const context = await browser.newContext({ ...(name === "gesture" ? {userAgent:"Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_1 like Mac OS X) AppleWebKit/605.1.15 Version/17.1 Mobile/15E148 Safari/604.1",hasTouch:true} : {}), viewport: { width: 1000, height: 900 } });
+    const mobileContext = name === "gesture" || name === "portrait-fit";
+    const context = await browser.newContext({ ...(mobileContext ? {userAgent:"Mozilla/5.0 (iPhone; CPU iPhone OS 17_1_1 like Mac OS X) AppleWebKit/605.1.15 Version/17.1 Mobile/15E148 Safari/604.1",hasTouch:true} : {}), viewport: name === "portrait-fit" ? { width: 390, height: 844 } : { width: 1000, height: 900 } });
     await context.exposeBinding("collectPlaybackLogs", (_source, entries) => {
       for (const e of entries) jsonl(join(dir, "playback.jsonl"), { ts: e.data.at, event: `web.${e.event}`, data: e.data, transport: "browser-fixture" });
     });
@@ -610,7 +662,7 @@ try {
     await context.route("**/*", route => {
       const raw = route.request().url(), url = new URL(raw), mapped = fixtureMediaUrl(raw);
       if (mapped !== raw) return route.continue({ url: mapped });
-      if ([report.ui, report.media].includes(url.origin)) return route.continue();
+      if ([report.ui, report.media, report.portraitMedia].includes(url.origin)) return route.continue();
       externalRequests.push({ protocol: url.protocol, host: url.hostname }); return route.abort("blockedbyclient");
     });
     const ids = new WeakMap(); let requestId = 0;
@@ -636,7 +688,7 @@ try {
         console.log(`PASS ${name}: ${JSON.stringify(result.metrics)}`);
         continue;
       }
-      const action = name === "recovery" ? explicitRecoveryCheck(page) : name === "proxy" ? proxyRecoveryCheck(page) : name === "gesture" ? gestureChecks(page) : name === "seek" || name === "legacy" ? seekChecks(page, name === "legacy") : name === "stall" ? stallCheck(page) : name === "mms" ? managedMediaCheck(page) : lifecycleCheck(page);
+      const action = name === "recovery" ? explicitRecoveryCheck(page) : name === "proxy" ? proxyRecoveryCheck(page) : name === "gesture" ? gestureChecks(page) : name === "portrait-fit" ? portraitFitChecks(page) : name === "seek" || name === "legacy" ? seekChecks(page, name === "legacy") : name === "stall" ? stallCheck(page) : name === "mms" ? managedMediaCheck(page) : lifecycleCheck(page);
       result.metrics = await Promise.race([action, new Promise((_, reject) => { deadline = setTimeout(() => reject(new Error("Scenario exceeded 45 seconds")), 45000); })]);
       assert.deepEqual(pageErrors, [], "Browser script errors");
       assert.deepEqual(externalRequests, [], "Unexpected external network requests");
@@ -661,8 +713,10 @@ try {
   await browser?.close();
   for (const socket of requests) socket.destroy();
   if (media) await new Promise(done => media.close(done));
+  if (portraitMedia) await new Promise(done => portraitMedia.close(done));
   await vite?.close();
   if (temporaryMedia) await rm(temporaryMedia, { recursive: true, force: true });
+  if (temporaryPortraitMedia) await rm(temporaryPortraitMedia, { recursive: true, force: true });
   report.finished = new Date().toISOString();
   report.passed = report.cases.filter(c => c.status === "passed").length;
   report.failed = report.cases.filter(c => c.status !== "passed").length + (report.setup_error ? 1 : 0);

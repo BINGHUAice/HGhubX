@@ -47,6 +47,9 @@ const diagnosticTest = new URLSearchParams(location.search).has("diagnostics");
 const legacyTest = new URLSearchParams(location.search).has("legacy");
 const initiallyInactive = new URLSearchParams(location.search).has("inactive");
 const delayedMount = new URLSearchParams(location.search).has("delayed-mount");
+// issue #142 fit 回归：手机竖屏视口下按真实视口尺寸铺满播放面，
+// 并跳过仅桌面端会成立的闲置进度条命中测试（移动端没有 .player-root.is-idle）。
+const portraitFitTest = new URLSearchParams(location.search).has("portrait-fit");
 if (diagnosticTest) {
   // Test-only handle: exercise the real engine's public API without rewriting production modules.
   const attach = Hls.prototype.attachMedia;
@@ -102,7 +105,9 @@ function Fixture() {
   fixture.setActive = setActive;
   fixture.setMounted = setMounted;
   return <AppProvider>
-    <div data-player-fixture data-active={active} style={{ position: "relative", width: 900, height: 540 }}>
+    <div data-player-fixture data-active={active} style={portraitFitTest
+      ? { position: "relative", width: window.innerWidth, height: window.innerHeight }
+      : { position: "relative", width: 900, height: 540 }}>
       {mounted && (legacyTest
         ? <Player src="https://media.fixture.invalid/list.m3u8" autoPlay active={active} className="w-full h-full" diagnosticContext={{ video_id: 991, active }} />
         : delayedMount
@@ -134,7 +139,7 @@ async function checkIdleSeekTarget() {
   }
   throw new Error("等待播放或控制条隐藏超时");
 }
-if (!legacyTest && !initiallyInactive && !delayedMount) void checkIdleSeekTarget().catch((error) => {
+if (!legacyTest && !initiallyInactive && !delayedMount && !portraitFitTest) void checkIdleSeekTarget().catch((error) => {
   fixture.errors.push(String(error));
   document.querySelector("#results")!.textContent = JSON.stringify({ passed: 0, failed: 1, error: String(error) });
 });
