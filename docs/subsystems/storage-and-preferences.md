@@ -26,6 +26,7 @@
   `STORAGE_KEYS.theme`/`autoLine`。
 - 会话：[`src-tauri/src/session.rs`](../../src-tauri/src/session.rs) 的 `Session`、
   `SessionStore`、`bind()`、`token()`、`snapshot()`、`stored_origin()`、`rebase_if_trusted()`、
+  `rebase_or_clear()`、`reconcile_on_boot()`、
   `set_if_revision()`、`is_current()`、`update_user_if_current()`、`clear_if_current()`、`persist()`。
 - 清缓存：[`src-tauri/src/api/platform.rs`](../../src-tauri/src/api/platform.rs) 的
   `cache_clear`；[`src-tauri/src/cache.rs`](../../src-tauri/src/cache.rs) 的

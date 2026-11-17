@@ -16,14 +16,6 @@ fn begin_line_selection() -> Result<u64, String> {
     Ok(*generation)
 }
 
-/// Credential trust for session rebase: fixed line or a mirror confirmed by a
-/// trusted publish page in this process. Custom lines are deliberately NOT
-/// trusted here — an explicitly saved custom origin may carry its own login,
-/// but a token must never follow a switch to or from it.
-pub(crate) fn trusted_line_origin(origin: &str) -> bool {
-    crate::lines::is_fixed(origin) || crate::lines::is_trusted_mirror(origin)
-}
-
 #[tauri::command]
 pub async fn line_cancel() -> Result<(), String> {
     begin_line_selection().map(|_| ())
@@ -49,9 +41,7 @@ pub async fn line_set(state: State<'_, Api>, url: String) -> Result<String, Stri
     let previous = base();
     let applied = crate::net::set_base(&url)?;
     crate::net::refresh_client();
-    if previous != applied && !state.session.rebase_if_trusted(&applied, trusted_line_origin) {
-        state.session.clear();
-    }
+    if previous != applied { state.session.rebase_or_clear(&applied, crate::session::rebase_trust); }
     Ok(applied)
 }
 
@@ -137,9 +127,7 @@ pub async fn line_auto(state: State<'_, Api>) -> Result<Value, String> {
         let next = crate::net::set_base(&chosen)?;
         crate::net::refresh_client();
         switched = next != previous;
-        if switched && !state.session.rebase_if_trusted(&next, trusted_line_origin) {
-            state.session.clear();
-        }
+        if switched { state.session.rebase_or_clear(&next, crate::session::rebase_trust); }
     }
     Ok(json!({
         "previous": previous,
@@ -168,9 +156,7 @@ pub async fn line_try_main(state: State<'_, Api>) -> Result<Value, String> {
             let next = crate::net::set_base(chosen)?;
             crate::net::refresh_client();
             switched = next != previous;
-            if switched && !state.session.rebase_if_trusted(&next, trusted_line_origin) {
-                state.session.clear();
-            }
+            if switched { state.session.rebase_or_clear(&next, crate::session::rebase_trust); }
         }
     }
     Ok(json!({
