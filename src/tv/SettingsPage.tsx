@@ -21,7 +21,7 @@ export default function SettingsPage(){
     events.forEach(name=>window.addEventListener(name,refresh));
     return()=>{current=false;events.forEach(name=>window.removeEventListener(name,refresh));};
   },[]);
-  const readMirrors=async()=>{setMirrorError("");try{const result=await api.lineMirrors();setMirrors(result.items);if(result.stale)setMirrorError("暂时使用上次获取的镜像线路");}catch(e){setMirrorError(String(e));}};
+  const readMirrors=async()=>{setMirrorError("");try{const result=await api.lineMirrors();setMirrors(result.items);}catch(e){setMirrorError(String(e));}};
   useEffect(()=>{if(group==="线路")void readMirrors();},[group]);
   const run=async(action:()=>Promise<unknown>,success="已保存")=>{if(operation.current)return;operation.current=true;setBusy(true);setMessage("");try{await action();setMessage(success);}catch(e){setMessage(String(e));}finally{operation.current=false;setBusy(false);}};
   const availableLines=[...new Map([...(lines?.fixed||[]),...mirrors].map(line=>[line.url,line])).values()];

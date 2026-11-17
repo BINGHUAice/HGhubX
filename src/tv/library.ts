@@ -139,7 +139,14 @@ export async function initializeLibrary(identity?: PendingMigrationIdentity | nu
   try { await completed; } catch (error) { throw failure ?? error; }
   changed();
   // An interrupted acknowledgement retries this IPC, never the completed import.
-  await invoke("tv_migration_complete", { identity: identity ?? null });
+  try {
+    await invoke("tv_migration_complete", { identity: identity ?? null });
+  } catch (error) {
+    // 跨包迁移后端未移植：命令缺失时本地片库照常可用，移植后此路径自动生效。
+    // Tauri 2.12.5 对未注册命令固定 reject "Command tv_migration_complete not found"
+    // （tauri src/webview/mod.rs）；仅豁免这一种错误，其余 IPC 失败照常抛出保持可重试。
+    if (String(error) !== "Command tv_migration_complete not found") throw error;
+  }
 }
 
 export async function listLibrary(): Promise<TvLibraryEntry[]> {
