@@ -39,9 +39,6 @@ export const isMobile = isAndroid || isIos;
 export const LOCAL =
   isMacos || isIos ? "hg://localhost" : isLinux ? "http://127.0.0.1:17650" : "http://hg.localhost";
 
-/** src 是否已是本地协议地址（避免在详情页把代理地址再包一层） */
-export const isLocalMedia = (src: string) => src.startsWith(`${LOCAL}/`);
-
 /** 封面：经本地协议解密（站点封面是 AES 密文）。 */
 export const cover = (url?: string, _w = 480) =>
   url ? `${LOCAL}/img?u=${encodeURIComponent(url)}` : "";

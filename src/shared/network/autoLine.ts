@@ -25,8 +25,6 @@ let failStreak = 0;
 let lastPickAt: number | null = null;
 let cancellation: Promise<void> = Promise.resolve();
 
-export let lastPick: { base: string; tier: string; ms: number } | null = null;
-
 function stopTimer() {
   window.clearTimeout(timer);
   timer = 0;
@@ -88,7 +86,6 @@ export async function pickLine(reason: string, force = false): Promise<void> {
       window.dispatchEvent(new Event("hg:line-down"));
       return;
     }
-    lastPick = { base: result.base, tier: result.pick.tier, ms: result.pick.ms };
     logLine(`[line] auto(${reason}) ${hostOf(result.base)} tier=${result.pick.tier} ms=${result.pick.ms} switched=${result.switched} | ${candidates}`);
     tracePlayback("line.pick", { reason, line: hostOf(result.base), tier: result.pick.tier, ms: result.pick.ms, switched: result.switched, candidates });
     if (result.switched) {

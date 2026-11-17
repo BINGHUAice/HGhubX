@@ -32,7 +32,9 @@ loopback、Windows 的自定义标题栏与注册表代理判断、Android 的 W
   [`tauri.macos.conf.json`](../../src-tauri/tauri.macos.conf.json)；Cargo 的 target 依赖在
   [`src-tauri/Cargo.toml`](../../src-tauri/Cargo.toml)。
 - 前端平台判断与本地基址：[`src/shared/api/api.ts`](../../src/shared/api/api.ts) 的 `isIos`、`isAndroid`、
-  `isLinux`、`platform`、`LOCAL`、`isLocalMedia()`；桌面壳：
+  `isLinux`、`platform`、`LOCAL`；本地媒体地址判定（避免把代理地址再包一层）由
+  [`src/features/playback/mediaTransport.ts`](../../src/features/playback/mediaTransport.ts) 的
+  `playbackSource()` 承担：按 `${LOCAL}/` 前缀与 `/hls`、`/seg` 路径识别已包装地址；桌面壳：
   [`src/app/shell/DesktopChrome.tsx`](../../src/app/shell/DesktopChrome.tsx) 的
   `DesktopTitleBar`/`win-titlebar`、`DesktopRail`；移动壳见
   [`src/app/App.tsx`](../../src/app/App.tsx) 的 `TabBar`/`MobileShell` 和
