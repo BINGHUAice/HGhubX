@@ -17,6 +17,7 @@
 | 2026-11-10 | 一次性设置迁移 | 老用户升级后“上下划切集”被旧默认 `false` 关掉，看起来像新功能没生效 | 旧配置里的 `false` 是历史默认，不是用户显式选择；迁移没有独立标记 | 迁移先写新键，再清旧键；一次性默认值升级用单独 marker，不能覆盖用户后来显式选择 | `5954ea6`；`scripts/test-storage-migration.mjs`；`storage-and-preferences.md` |
 | 2026-11-17 | 设置页 smoke 定位 | CI 的线路测试等待“播放源”按钮超时 | 设置分组默认折叠，脚本未通过分组按钮展开；另有旧推荐列表断言与当前仅渲染 `items` 的实现失配 | 先用分组按钮的可访问名称展开并检查 `aria-expanded`，再操作组内控件；镜像断言对应实际发布项，保留切线、取消、会话和复制失败断言 | [CI 43949517841](https://github.com/zxsos/HGhubX/actions/runs/43949517841/job/133587970186)；`src/features/settings/SettingsSection.tsx`、`LinePicker.tsx`；`scripts/test-line-selection.mjs`、`scripts/test-diagnostic-copy.mjs`、`scripts/test-network-settings.mjs` |
 | 2026-11-17 | 播放测试前置条件 | 手势测试等待播放超时；失活后延迟挂载测试等不到播放器 | 首次长按教程会暂停播放；失活的 Feed 不请求播放地址，因此没有挂载播放器 | 手势测试先点击真实教程确认按钮；延迟挂载用真实 VideoSurface/Player，先确认父页面失活且无 video，再挂载并检查无播放/分片请求，激活后确认可播 | [Playback 43952408893](https://github.com/zxsos/HGhubX/actions/runs/43952408893)；`scripts/test-playback.mjs`、`tests/player-seek.tsx` |
+| 2026-11-17 | 冷启动与返回键 | 启动动画期间提前挂载 App 后，从视频页按返回不弹栈；真机上动画期返回可能直接退出应用 | App 与启动动画同时注册 `back-button`；旧 fixture 只保留最后注册者且 `remove_listener` 是 no-op，动画卸载后返回仍打在已完成的动画回调上 | 覆盖层期间用 `holdBackForStartup()` 让 `runBack()` 只消费不导航；fixture 按真实 Tauri 建模多监听广播与按 channelId 注销；动画结束后恢复原有返回顺序 | `4dd7844`；`src/shared/lib/back.ts`、`src/app/startup/LaunchAnimation.tsx`、`scripts/fixtures/app-ui.mjs`；`scripts/test-inplace-search-back.mjs` |
 
 新回归的追加方式：
 

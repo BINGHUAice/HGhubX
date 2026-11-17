@@ -106,6 +106,12 @@ loopback、Windows 的自定义标题栏与注册表代理判断、Android 的 W
    VPN/TUN 或显式 `HGHUBX_PROXY`。
 4. `bundle.android.minSdkVersion=24`，`versionCode` 由 `scripts/set-version.mjs` 写入；签名只在
    release workflow 中用 secrets 完成。
+5. 返回键是多监听广播：`App.tsx` 与启动动画（`LaunchAnimation`）都会注册 `app|back-button`。
+   已同意协议的老用户在动画期间就挂载 App（冷启动优化），此时返回只归动画（跳过动画）：
+   `StartupGate` 在覆盖层分支持有 `holdBackForStartup()`，`runBack()` 见门直接消费不导航，
+   覆盖层卸载时释放（引用计数 + 幂等释放，StrictMode 安全）。动画结束后只剩 App 监听，
+   顺序恢复为 面板/弹层 → 全屏 → 登录框 → 页面栈 → 回首页 → 退出。未同意首启不持门。
+   TV 版走 `registerBack`（remote.ts 的 scope 分发），不经 `runBack()`，门对 TV 无影响。
 
 ## 状态转换
 
