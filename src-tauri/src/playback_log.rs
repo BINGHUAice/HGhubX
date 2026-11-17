@@ -9,6 +9,10 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 
 const MAX_FILE: u64 = 2 * 1024 * 1024;
+// 导出上限：安卓 ClipboardManager.setPrimaryClip 走 Binder，单次事务约 1 MiB，
+// 两份 2 MiB 日志拼起来可达 4 MiB+，整份复制会 TransactionTooLargeException（issue #142）。
+// 这里把导出裁到安全尺寸，保留环境头 + 最近的事件，并插一行 truncation 说明（仍是 JSONL）。
+const MAX_EXPORT: usize = 256 * 1024;
 static ENABLED: AtomicBool = AtomicBool::new(false);
 static SEQ: AtomicU64 = AtomicU64::new(0);
 static LOG: Lazy<Mutex<Journal>> = Lazy::new(|| Mutex::new(Journal::default()));
@@ -252,21 +256,49 @@ pub fn playback_log_read() -> Result<String, String> {
     let base = crate::net::base();
     let host = base.split("://").nth(1).unwrap_or(&base);
     let host = host.split('/').next().unwrap_or(host);
-    let mut text = env_line(host)?;
+    let header = env_line(host)?;
+    let mut body: Vec<String> = Vec::new();
     for name in ["playback.previous.log", "playback.log"] {
         let path = dir.join(name);
         if path.exists() {
             if fs::metadata(&path).map_err(|_| "无法读取日志")?.len() > MAX_FILE + 16384 {
                 return Err("日志文件超出大小限制".into());
             }
-            let body = fs::read_to_string(path).map_err(|_| "无法读取日志")?;
-            text.push_str(body.trim_end_matches('\n'));
-            text.push('\n');
+            let raw = fs::read_to_string(path).map_err(|_| "无法读取日志")?;
+            for line in raw.lines() {
+                if !line.is_empty() {
+                    body.push(line.to_string());
+                }
+            }
         }
     }
-    for line in debug_lines(dir)? {
-        text.push_str(&line);
+    body.extend(debug_lines(dir)?);
+
+    let mut text = header;
+    let total: usize = body.iter().map(|l| l.len() + 1).sum();
+    if total > MAX_EXPORT {
+        let note = json!({
+            "event": "log.truncated",
+            "data": { "total_bytes": total, "kept_bytes": MAX_EXPORT }
+        })
+        .to_string();
+        let mut used = note.len() + 1;
+        let mut start = body.len();
+        while start > 0 && used + body[start - 1].len() + 1 <= MAX_EXPORT {
+            used += body[start - 1].len() + 1;
+            start -= 1;
+        }
+        text.push_str(&note);
         text.push('\n');
+        for line in &body[start..] {
+            text.push_str(line);
+            text.push('\n');
+        }
+    } else {
+        for line in &body {
+            text.push_str(line);
+            text.push('\n');
+        }
     }
     Ok(text)
 }
@@ -431,6 +463,49 @@ mod tests {
         log.dir = Some(dir.join("missing"));
         assert!(log.set(false).is_err());
         assert!(log.enabled);
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn log_export_is_bounded_for_clipboard() {
+        let dir = std::env::temp_dir().join(format!(
+            "hghubx-playback-log-{}",
+            SEQ.fetch_add(1, Ordering::Relaxed)
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        bind(&dir);
+        // 两份接近上限的日志，拼起来远超安卓 Binder 单次事务的安全尺寸（issue #142）。
+        let line = json!({
+            "ts": "2026-11-17T00:00:00Z", "pid": 1, "seq": 1,
+            "event": "web.seek.request", "data": { "blob": "x".repeat(2000) }
+        })
+        .to_string();
+        let mut big = String::new();
+        for _ in 0..900 {
+            big.push_str(&line);
+            big.push('\n');
+        }
+        assert!(big.len() as u64 <= MAX_FILE + 16384);
+        fs::write(dir.join("playback.previous.log"), &big).unwrap();
+        fs::write(dir.join("playback.log"), &big).unwrap();
+        let text = playback_log_read().unwrap();
+        assert!(text.len() <= MAX_EXPORT + 4096, "导出超出剪贴板安全尺寸: {}", text.len());
+        assert!(text.contains("\"diagnostics.env\""), "环境头必须保留");
+        assert!(text.contains("\"log.truncated\""), "超限必须插裁剪说明");
+        for line in text.lines() {
+            assert!(line.starts_with('{') && line.ends_with('}'), "不是 JSONL 行: {line}");
+            serde_json::from_str::<Value>(line).expect("导出行必须可解析");
+        }
+        // 小日志不裁剪，原样导出。
+        fs::write(dir.join("playback.previous.log"), "").unwrap();
+        fs::write(dir.join("playback.log"), format!("{line}\n")).unwrap();
+        let small = playback_log_read().unwrap();
+        assert!(!small.contains("\"log.truncated\""));
+        assert!(small.contains("web.seek.request"));
+        bind(&dir);
+        let mut log = LOG.lock().unwrap();
+        *log = Journal::default();
+        ENABLED.store(false, Ordering::Relaxed);
         fs::remove_dir_all(dir).unwrap();
     }
 }
