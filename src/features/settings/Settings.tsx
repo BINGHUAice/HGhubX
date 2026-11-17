@@ -18,15 +18,6 @@ import { IBack, IBoltF, IBroom, IChevR, IHeart, IInfo, ILink, ILockF, IMoon, IRe
 
 const SETTING_GROUPS = ["外观", "播放", "内容偏好", "本地数据", "网络", "播放诊断", "其他"] as const;
 type SettingGroup = typeof SETTING_GROUPS[number];
-const GROUP_SUMMARIES: Record<SettingGroup, string> = {
-  外观: "跟随系统、浅色与深色",
-  播放: "启动静音与画质偏好",
-  内容偏好: "标签屏蔽与内容显示",
-  本地数据: "收藏、观看记录与缓存",
-  网络: "代理、线路与连接诊断",
-  播放诊断: "详细日志与问题排查",
-  其他: "检查更新、使用协议与关于应用",
-};
 
 /* 独立设置页：线路 / 外观 / 播放 / 本地数据 / 清理缓存 / 网络诊断 / 关于
    入口：Windows 侧栏「设置」、Android「我的」右上角齿轮 */
@@ -62,7 +53,7 @@ export default function Settings({ onBack, initialSection }: { onBack: () => voi
     });
     return () => cancelAnimationFrame(frame);
   }, [initialSection]);
-  const section = (title: SettingGroup, children: ReactNode) => <SettingsSection title={title} summary={GROUP_SUMMARIES[title]}
+  const section = (title: SettingGroup, children: ReactNode) => <SettingsSection title={title}
     open={openGroups.has(title)} onToggle={() => setOpenGroups(previous => {
       const next = new Set(previous);
       if (next.has(title)) next.delete(title); else next.add(title);
@@ -178,7 +169,6 @@ export default function Settings({ onBack, initialSection }: { onBack: () => voi
               <span className="ios-setting-icon"><IBroom size={16} /></span>
               <div className="flex-1">
                 <div className="text-[14px] text-on">清理缓存</div>
-                <div className="text-[12px] text-mut">非 Linux 只清应用内媒体缓存；Linux 桌面版额外清 WebView 缓存</div>
               </div>
               <IChevR size={15} className="text-mut" />
             </Button>

@@ -471,7 +471,6 @@ html.theme-light {
 .ios-settings-section .ios-settings-trigger.ios-button:not(:disabled):active { scale:1; background:var(--p-hover); }
 .ios-settings-heading { display:flex; flex:1; min-width:0; flex-direction:column; gap:4px; }
 .ios-settings-title { font-size:16px; line-height:1.5; font-weight:700; overflow-wrap:anywhere; }
-.ios-settings-summary { font-size:12px; line-height:1.5; font-weight:400; color:var(--p-mut); overflow-wrap:anywhere; }
 .ios-settings-chevron { flex:none; transition:transform .24s var(--motion-spring-soft); }
 .ios-settings-trigger[aria-expanded=true] .ios-settings-chevron { transform:rotate(90deg); }
 .ios-settings-panel[hidden] { display:none; }

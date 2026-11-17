@@ -175,7 +175,7 @@ export default function Search({ active, wide }: { active: boolean; wide: boolea
                 <div className="flex justify-center py-12"><Loader label="正在搜索" className="w-8 h-8 spinner" /></div>
               ) : !err && (
                 <Empty icon={<ISearch size={26} />} title="没有找到相关内容" sub="换个关键词试试，比如「都市」「逆袭」"
-                  action="看看热榜" onAction={() => push({ kind: "ranks" })} />
+                  action="看看排行榜" onAction={() => push({ kind: "ranks" })} />
               )}
             </section>
           </>
@@ -239,7 +239,7 @@ export function RankPage({ onBack, wide }: { onBack: () => void; wide: boolean }
             <div>
               <div className="flex items-center gap-2">
                 <span className="w-9 h-9 rounded-(--r-sm) bg-pc text-on-pc flex items-center justify-center"><ITrophy size={20} /></span>
-                <h1 className="text-[24px] font-bold tracking-wide text-on">HGhubX 热榜</h1>
+                <h1 className="text-[24px] font-bold tracking-wide text-on">排行榜</h1>
               </div>
             </div>
             <Button aria-label="刷新榜单" disabled={loading} onClick={() => void load(tab)} className="ios-icon-button">

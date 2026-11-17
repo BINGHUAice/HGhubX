@@ -3,9 +3,8 @@ import { IChevR } from "../../shared/ui/icons";
 import { Button, Surface } from "../../shared/ui/ios/controls";
 
 /** Keep the panel mounted so collapsing a group preserves drafts and async state. */
-export default function SettingsSection({ title, summary, open, onToggle, children }: {
+export default function SettingsSection({ title, open, onToggle, children }: {
   title: string;
-  summary: string;
   open: boolean;
   onToggle: () => void;
   children: ReactNode;
@@ -19,7 +18,6 @@ export default function SettingsSection({ title, summary, open, onToggle, childr
           onClick={onToggle} className="ios-settings-trigger">
           <span className="ios-settings-heading">
             <span className="ios-settings-title">{title}</span>
-            <span className="ios-settings-summary">{summary}</span>
           </span>
           <IChevR size={18} aria-hidden="true" className="ios-settings-chevron" />
         </Button>

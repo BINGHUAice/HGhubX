@@ -24,7 +24,7 @@ import { getHoldZone, HOLD_DELAY_MS, HOLD_LOCK_DISTANCE, type HoldZone } from ".
 import { useMobileHoldGuide } from "./useMobileHoldGuide";
 import { useFeedDetails } from "./useFeedDetails";
 import {
-  IBack, IBoltF, IChevR, IChevronDown, IChevronUp, IClose, ICommentF, ICompress, IExpand, IFileText, IHeart, IHeartF, IMore,
+  IBack, IBoltF, IChevR, IChevronDown, IChevronUp, IClose, ICommentF, ICompress, IExpand, IFileText, IHeart, IHeartF,
   ILink, IList, ILockF, IPauseF, IPlayF, ISearch, IStar, IStarF, IVertSwap, IVol, IVolMute,
 } from "../../shared/ui/icons";
 
@@ -1376,8 +1376,6 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
                   <Button aria-label="视频详情" onClick={() => setPanel("detail")} className="min-h-11 px-4 rounded-full hg-chip text-[12px] inline-flex items-center gap-1">
                     详情与标签<IChevR size={13} />
                   </Button>
-                  {isActive && <Button aria-label="不感兴趣" title="不感兴趣 / 内容偏好" onClick={openTagMenu}
-                    className="video-preference-trigger"><IMore size={19} aria-hidden="true" /></Button>}
                 </div>
               </div>
               )}
@@ -1396,8 +1394,6 @@ export default function Feed({ videoIds, startIndex = 0, title = "", mode, kind 
                         className="min-h-11 flex items-center gap-0.5 text-[12px] font-medium hg-ink-3 hg-ov-shadow-strong pressable">
                         详情 · 第 {curEp} 集<IChevR size={11} />
                       </Button>
-                      {isActive && <Button aria-label="不感兴趣" title="不感兴趣 / 内容偏好" onClick={openTagMenu}
-                        className="video-preference-trigger"><IMore size={19} aria-hidden="true" /></Button>}
                     </div>
                     <div ref={barRef} className="mx-4 mt-2 relative" style={{ height: 14, touchAction: "none" }}
                       onPointerDown={onBarDown} onPointerMove={onBarMove} onPointerUp={onBarUp} onPointerCancel={onBarUp}>
