@@ -25,8 +25,8 @@
   `normalizeHistory()`、`loadPersist()`、`readThemePreference()`、`LS`、
   `STORAGE_KEYS.theme`/`autoLine`。
 - 会话：[`src-tauri/src/session.rs`](../../src-tauri/src/session.rs) 的 `Session`、
-  `SessionStore`、`bind()`、`token()`、`snapshot()`、`set_if_revision()`、`is_current()`、
-  `update_user_if_current()`、`clear_if_current()`、`persist()`。
+  `SessionStore`、`bind()`、`token()`、`snapshot()`、`stored_origin()`、`rebase_if_trusted()`、
+  `set_if_revision()`、`is_current()`、`update_user_if_current()`、`clear_if_current()`、`persist()`。
 - 清缓存：[`src-tauri/src/api/platform.rs`](../../src-tauri/src/api/platform.rs) 的
   `cache_clear`；[`src-tauri/src/cache.rs`](../../src-tauri/src/cache.rs) 的
   `CacheClearReport`、`clear_web_cache()`、`safe_cache_types()`。
@@ -104,8 +104,10 @@
   把用户的 `false` 改回 `true`。
 - `accountScope`、`lineEpoch`、`generation` 必须一起进入异步结果校验；旧账号或旧线路的返回
   不能写进当前桶，否则会把 A 的收藏/历史显示在 B 上。
-- 会话 token 绑定 origin 和 revision。切线路会 `SessionStore.clear()`；旧 `session.json` 没有
-  origin 时不得猜归属。
+- 会话 token 绑定 origin 和 revision。`token()`/`user()`/`snapshot()` 按 origin 精确匹配；
+  唯一跨 origin 通道是 `rebase_if_trusted()`——仅当旧新两端都是固定线路或本进程发布页确认的
+  可信镜像时改写 origin（revision 递增并落盘），否则切线路仍 `SessionStore.clear()`。
+  旧 `session.json` 没有 origin 时不得猜归属，也不参与 rebase。
 - 清缓存不能调用 `clear_all_browsing_data`；它会连 cookies/localStorage 一起删，导致登录和
   偏好丢失。非 Linux 平台宁可只清内存缓存，也不做全量清理。
 - 本地写入失败要可见（偏好提示、账号 `sync.error`），不能静默显示“已保存”。

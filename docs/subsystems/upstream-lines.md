@@ -2,13 +2,16 @@
 
 ## 责任与边界
 
-线路子系统负责当前上游 origin 的选择、持久化和信任判定：两条固定线路、地址发布页公布的镜像、
+线路子系统负责当前上游 origin 的选择、持久化和信任判定：一条固定主站线路、地址发布页公布的镜像、
 用户显式保存的自定义线路，以及探测、自动选线和回切主站。它回答“这次请求发往哪个 HTTPS
 origin”，不负责 HTTP 客户端、代理、DNS 固定或媒体字节（见
 [network-proxy-media.md](network-proxy-media.md)）。
 
-凭据只属于 origin：切线路会清空 `SessionStore`，旧 token 不会跟着地址走。镜像只有在被可信
-发布页实际解析出来后才获得携带凭据的资格；`line.json` 里的历史地址本身不授予信任。
+凭据只属于 origin：`token()`/`user()`/`snapshot()` 按 origin 精确匹配。上游各可信线路共享同一
+账号体系，因此固定线路与可信镜像之间的切换经 `SessionStore::rebase_if_trusted()` 把会话 origin
+改写为新线路（revision 递增并落盘），登录得以保留；任一端不可信（自定义线路、未被发布页确认的
+镜像）时仍然 `SessionStore.clear()`，旧 token 不会跟着地址走。镜像只有在被可信发布页实际解析
+出来后才获得携带凭据与参与 rebase 的资格；`line.json` 里的历史地址本身不授予信任。
 
 ## 事实来源
 
@@ -41,7 +44,8 @@ origin”，不负责 HTTP 客户端、代理、DNS 固定或媒体字节（见
 1. 启动时 `bind_base(app_data_dir)` 读取 `line.json`。格式是 `{v:2, base, custom}`；
    `persisted_line()` 只接受纯 HTTPS origin，旧 `{base}` 格式恢复地址但不恢复自定义线路的登录
    授权。`refresh_media_scope()` 让媒体缓存看到新的线路代次。
-2. 两条固定线路是 `https://huangguoai.com` 和 `https://huangguoai.ai`；`line_state` 返回
+2. 固定线路只有一条：`https://huangguoai.com`。`https://huangguoai.ai` 只是导航站，
+   `/api/*` 全部 nginx 404，不作为 API 线路，也不授予凭据信任。`line_state` 返回
    `base`、`default`、`custom` 和 `FIXED`；`line_mirrors` 才去抓两条发布页，
    平时不轮询。发布页和 `publish.js` 必须在 8 秒、512 KiB 内完成，脚本必须是同源 HTTPS、
    文件名为 `publish.js`，重定向不能跨 origin。
@@ -51,7 +55,9 @@ origin”，不负责 HTTP 客户端、代理、DNS 固定或媒体字节（见
 4. 手动选择固定线路走 `line_set`；自定义线路走 `line_custom_set`。二者都先经过
    `normalize_base()`（HTTPS、无路径/查询/片段、拒绝内网），非自定义线路还必须属于 `FIXED`
    或 `is_trusted_mirror()`。成功后写入 `line.json`（临时文件 + rename），刷新 HTTP 客户端；
-   地址变化时 `state.session.clear()`。
+   地址变化时 `line_set` 先尝试 `rebase_if_trusted()`（两端都是固定/可信镜像则保留会话），
+   失败才 `state.session.clear()`；`line_custom_set` 永远清空——自定义站点不参与可信 rebase，
+   即使旧 origin 可信也不能把 token 带过去。
 5. 自动选线由 `autoLine.ts` 驱动：启动、上线、页面重新可见、`api_*` 连续两次网络失败或
    手动开启都会触发体检。`line_health` 只探当前线路；连续两次失败才 `line_auto`，每 15 秒最多
    主动选一次，定时体检按 60/120/300 秒退避。
@@ -63,7 +69,11 @@ origin”，不负责 HTTP 客户端、代理、DNS 固定或媒体字节（见
    `reason="all-down"`、`base=""`。前端收到 all-down 只提示一次并保持当前线路，不盲切
    `.ai`。`line_auto` 在真正落盘前重新检查 `LINE_SELECTION` 代次，用户手动操作会让旧探测作废。
 8. 当前是镜像时，健康检查会调用 `line_try_main()`：只探固定线路 1，通了就切回，代价是一个
-   请求，不清会话。切回后 `hg:line-changed` 让列表和详情按新 `lineEpoch` 重新读取。
+   请求；两端可信时会话经 rebase 保留，旧 origin 不可信（如自定义线路）则清空。切回后
+   `hg:line-changed` 让列表和详情按新 `lineEpoch` 重新读取。`line_auto` 落盘切换时同样执行
+   rebase-or-clear；`app_boot` 在当前 origin 查不到会话、但存有旧 origin 会话时，先做
+   `verify_published_origin()` 可信刷新（填充 `TRUSTED_MIRRORS`），再尝试 rebase，覆盖
+   重启后 `line.json` 已是新线路的场景。
 9. 带 token 的业务请求在严格模式下还要过 `trusted_auth_origin()`：固定线路、本次进程内由发布页
    确认过的镜像，或用户显式保存的自定义线路。已落盘但尚未验证的镜像会触发
    `verify_published_origin()`；验证失败只允许游客浏览，登录/注册被拒绝。
