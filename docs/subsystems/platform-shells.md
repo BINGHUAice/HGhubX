@@ -132,6 +132,13 @@ loopback、Windows 的自定义标题栏与注册表代理判断、Android 的 W
    待入场时间满足且底层界面提交（`contentReady` 或超时兜底）后再释放 `data-hg-launching`、同步
    `meta[name="theme-color"]` 并淡出覆盖层。
 
+### 共享页面壳几何
+
+`src/styles/ios.css` 的 `.ios-page` 用 `--ios-page-max:clamp(720px, 62vw, 960px)` 给标题/头栏
+（`>.shrink-0`）与滚动体（`>.scroll-y`）同时限宽并 `margin-inline:auto` 居中，宽屏两侧留白对称；
+视口窄于 720px 时 `max-width` 不再约束，手机保持全宽全出血。改页面容器几何时同步检查标题与
+滚动体两条规则，避免只居中其一。
+
 ## 状态转换
 
 - iOS 页面加载：`Started` → 应用布局；`Finished` → 再应用布局并关闭文本交互 → 80ms/350ms
