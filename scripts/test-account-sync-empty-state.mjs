@@ -23,7 +23,7 @@ try {
   }
   browser = await chromium.launch({ headless: true, executablePath });
 
-  const openProfile = async ({ favoriteIds = [], delaySync = false, rejectFirstSync = false, rejectHistory = false, omitFavorites = false, rejectWith401 = false, seedCredential = false, credentialPassword = "fixture-pass" } = {}) => {
+  const openProfile = async ({ favoriteIds = [], delaySync = false, rejectFirstSync = false, rejectHistory = false, omitFavorites = false, rejectWith401 = false, seedCredential = false, credentialPassword = "fixture-pass", firstEpisodeCount } = {}) => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     await context.addInitScript(installFixture, { theme: "light", titles: ["城市与晚风", "重逢在夏日以后", "星河旅人"] });
     await context.addInitScript(options => {
@@ -38,6 +38,7 @@ try {
       window.__ALLOW_SYNC_SUCCESS__ = !(options.rejectFirstSync || options.rejectWith401);
       window.__API_ME_CALLS__ = 0;
       window.__API_LOGIN_CALLS__ = 0;
+      window.__FAVORITE_EPISODE_COUNT__ = options.firstEpisodeCount;
       if (options.seedCredential) localStorage.setItem("hghubx_credential_v1", JSON.stringify({
         username: "fixture", password: options.credentialPassword, userId: user.id, origin: "https://fixture.invalid",
       }));
@@ -46,6 +47,11 @@ try {
         : Promise.resolve();
       window.__TAURI_INTERNALS__.invoke = async (command, args = {}) => {
         if (command === "app_boot") return { user, logged_in: true, base: "https://fixture.invalid", strict_security: true };
+        if (command === "api_video" && args.id === 1 && window.__FAVORITE_EPISODE_COUNT__) {
+          const count = window.__FAVORITE_EPISODE_COUNT__;
+          return { ...await original(command, args), is_finished: false, episode_count: count, total_episodes: count,
+            episodes: Array.from({ length: count }, (_, index) => ({ id: index + 1, ep_num: index + 1 })) };
+        }
         if (command === "api_me") {
           await window.__ACCOUNT_SYNC_GATE__;
           window.__API_ME_CALLS__ += 1;
@@ -70,7 +76,7 @@ try {
         }
         return original(command, args);
       };
-    }, { favoriteIds, delaySync, rejectFirstSync, rejectHistory, omitFavorites, rejectWith401, seedCredential, credentialPassword });
+    }, { favoriteIds, delaySync, rejectFirstSync, rejectHistory, omitFavorites, rejectWith401, seedCredential, credentialPassword, firstEpisodeCount });
     const page = await context.newPage();
     page.on("pageerror", error => report.errors.push(error.message));
     await page.route("**/*", route => {
@@ -176,6 +182,22 @@ try {
     assert.equal(await page.evaluate(() => window.__API_LOGIN_CALLS__), loginCalls,
       "Manual retry must not loop silent re-login after a rejected credential");
     report.checks.push("failed silent re-login keeps the session, clears the stale credential and reports an actionable error");
+    await context.close();
+  }
+
+  {
+    const { context, page } = await openProfile({ favoriteIds: [1], firstEpisodeCount: 12 });
+    const card = page.getByRole("button").filter({ hasText: "城市与晚风" }).first();
+    await card.getByText("12 集", { exact: true }).waitFor();
+    await page.waitForFunction(() => JSON.parse(localStorage.getItem("hghubx_accounts_v1") || "{}")
+      .accounts?.[JSON.stringify(["https://fixture.invalid", 9])]?.favEpCounts?.[1] === 12);
+    const nav = page.getByRole("navigation", { name: "主导航" });
+    await nav.getByRole("button", { name: "分类", exact: true }).click();
+    await page.getByRole("heading", { name: "我的", exact: true }).waitFor({ state: "hidden" });
+    await page.evaluate(() => { window.__FAVORITE_EPISODE_COUNT__ = 13; });
+    await nav.getByRole("button", { name: "我的", exact: true }).click();
+    await card.getByText("新更 1 集", { exact: true }).waitFor();
+    report.checks.push("returning to cached favorites shows a newly added episode");
     await context.close();
   }
 

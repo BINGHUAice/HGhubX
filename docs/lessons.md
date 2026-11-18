@@ -28,7 +28,7 @@
 | 2026-11-19 | 宽屏页面未限宽居中 | 桌面宽屏下「我的」等 `.ios-page` 页面内容全宽拉伸/贴边，两侧留白不对称 | `.ios-page>.scroll-y`/`.shrink-0` 只有 `padding-inline`，没有限宽与居中 | 宽屏用 `--ios-page-max:clamp(720px,62vw,960px)` 给标题与滚动体同时限宽 + `margin-inline:auto`；窄屏 max-width 自动失效保持全宽。改容器几何要同时改标题与滚动体两条规则 | `src/styles/ios.css` 的 `.ios-page`；常驻回归 `scripts/test-ui-feedback.mjs`（`wide-centering`/`narrow-full-width`，旧代码红/修复绿） |
 | 2026-11-19 | TV PIN 快按丢键 | 设置启动密码时连按数字键，确认步只收到部分键 | 步切换时 `appendDigit` 已同步清空缓冲，延迟执行的 effect 可能再次清空并吞掉下一步按键 | 只在同步输入路径清空缓冲；测试等待模态打开或卸载后再开始下一段输入，不延缓同一模态内的连续按键 | `src/tv/TvPinGate.tsx`；`scripts/test-tv-remote.mjs` 的 `pin-lock-gate-and-settings` |
 | 2026-11-19 | TV resize 后焦点断言漂移 | `720p-1080p-4k-layout` 偶发 `outline-style` 读到 `none`，失败视口不固定 | `setViewportSize` 真实 resize 后渲染 widget 重建窗口内 `focus()` 静默不落地，测试同一次 evaluate 同步读 `:focus` 派生样式 | 测试在 resize 后等两帧再聚焦，并显式断言 `activeElement` 命中（未命中重试一次）；不改 `tv.css` 焦点规则。产品侧 resize 焦点兜底另案评估 | `scripts/test-tv-remote.mjs` 的 `720p-1080p-4k-layout` |
-| 2026-11-19 | 收藏集数缓存过期 | 返回仍挂载的「我的」页时，已缓存的短剧可能不显示新集 | 页面重新激活时只读取未缓存详情 | 重新激活时后台刷新已展现的收藏；限制并发，保留上次详情及实际观看断点 | `src/features/account/Profile.tsx` 的收藏详情读取 |
+| 2026-11-19 | 收藏集数缓存过期 | 返回仍挂载的「我的」页时，已缓存的短剧可能不显示新集 | 页面重新激活时只读取未缓存详情 | 重新激活时后台刷新已展现的收藏；限制并发，保留上次详情及实际观看断点 | `scripts/test-account-sync-empty-state.mjs` 的已缓存收藏更新场景 |
 
 新回归的追加方式：
 

@@ -144,8 +144,10 @@ pnpm test:playback --scenarios tv
 ```
 
 `test-storage-migration` 覆盖旧键、写/删失败、损坏 JSON 和一次性 swipe 迁移；
-`test-account-sync-empty-state` 覆盖同步中、失败、缺收藏字段、历史失败四种“未知”状态，
-以及账号 401 静默重登成功与失败（可操作提示、清失效凭据、不循环重登）两种状态。
+`test-account-sync-empty-state` 覆盖同步中、失败、缺收藏字段、历史失败等“未知”状态，
+账号 401 静默重登成功与失败，以及返回收藏页后已缓存条目出现新集的情况。
+Rust 的 `silent_login_preserves_existing_session_on_user_mismatch` 覆盖重登接口返回另一个账号时
+原 token、用户、线路与代次保持不变。
 这些是本地 fixture，不证明真实账号后端返回结构；真实接口变化需另加 fixture。
 `test:playback --scenarios tv` 的 `pin-lock-gate-and-settings` 覆盖启动门解锁与设置模态两段输入、
 不一致回退与冷却文案。
