@@ -1,8 +1,9 @@
 import { Button, SegmentedControl, Surface } from "../../shared/ui/ios/controls";
 import { Loader } from "../../shared/ui/ios/effects";
 import { useEffect, useRef, useState } from "react";
-import { api, APP_VERSION, fmt, fmtTime, isMobile, platform } from "../../shared/api/api";
+import { api, APP_VERSION, fmt, isMobile, platform } from "../../shared/api/api";
 import type { Detail, Post } from "../../shared/api/types";
+import { detailEpisodeCount, formatWatchProgress, resolveResumeTarget, unwatchedNewEpisodes } from "../../shared/model/favoriteProgress";
 import { useStore } from "../../shared/model/store";
 import { Avatar, Empty, Modal } from "../../shared/ui/ui";
 import { MediaCard } from "../../shared/ui/cards";
@@ -19,7 +20,8 @@ export default function Profile({ wide, active = true }: { wide: boolean; active
 function ProfileContent({ wide, active }: { wide: boolean; active: boolean }) {
   const { blockReason } = useContentPreferences();
   const {
-    user, setLoginOpen, logout, history, favs, postFavs, setCollected, toast,
+    user, setLoginOpen, logout, history, favs, postFavs, favEpCounts,
+    seedFavoriteEpisodes, ackFavoriteEpisodes, setCollected, toast,
     clearHistory, push, accountSync, syncAccount,
   } = useStore();
   const [tab, setTab] = useState<"fav" | "history">("fav");
@@ -61,8 +63,29 @@ function ProfileContent({ wide, active }: { wide: boolean; active: boolean }) {
   const favoriteStateUnknown = tab === "fav" && !!user && !accountSync.favoritesKnown && favs.length === 0 && postFavs.length === 0;
   const favoriteSyncFailed = favoriteStateUnknown && !accountSync.busy;
   const syncingFavorites = favoriteStateUnknown && !favoriteSyncFailed;
-  /** 观看记录里这条的进度（收藏页没有） */
-  const progressOf = (id: number) => (tab === "history" ? history.find((h) => h.id === id) : undefined);
+  /** 观看记录里这条的进度（我的收藏与观看历史共享） */
+  const progressOf = (id: number) => history.find((h) => h.id === id);
+
+  useEffect(() => {
+    if (!favs.length) return;
+    const toSeed: Record<number, number> = {};
+    for (const id of favs) {
+      if (favEpCounts[id] !== undefined) continue;
+      const detail = videoCache[id];
+      if (!detail) continue;
+      const latest = detailEpisodeCount(detail);
+      if (latest <= 0) continue;
+      const unwatched = unwatchedNewEpisodes(detail, history.find(h => h.id === id), undefined);
+      toSeed[id] = Math.max(1, latest - unwatched);
+    }
+    if (Object.keys(toSeed).length > 0) seedFavoriteEpisodes(toSeed);
+  }, [favs, videoCache, history, favEpCounts, seedFavoriteEpisodes]);
+
+  const updatedFavCount = tab === "fav" && favKind === "video"
+    ? videoCards.reduce((count, c) => (
+      !blockReason(c.tags) && unwatchedNewEpisodes(c, progressOf(c.id), favEpCounts[c.id]) > 0 ? count + 1 : count
+    ), 0)
+    : 0;
 
   useEffect(() => {
     if (!active) return;
@@ -216,6 +239,11 @@ function ProfileContent({ wide, active }: { wide: boolean; active: boolean }) {
             <Button aria-pressed={favKind === "post"} onClick={() => setFavKind("post")} className="ios-filter-pill">
               帖子{postFavs.length ? ` ${postFavs.length}` : ""}
             </Button>
+            {updatedFavCount > 0 && (
+              <span role="status" className="ml-auto text-[12px] font-semibold text-primary">
+                {updatedFavCount} 部有新集
+              </span>
+            )}
           </div>
         )}
 
@@ -245,23 +273,34 @@ function ProfileContent({ wide, active }: { wide: boolean; active: boolean }) {
               {videoCards.map((c) => {
                 const progress = progressOf(c.id);
                 const reason = blockReason(c.tags);
+                const latestCount = detailEpisodeCount(c);
+                const unwatchedNew = tab === "fav" ? unwatchedNewEpisodes(c, progress, favEpCounts[c.id]) : 0;
+                const tagLine = c.tags?.slice(0, 2).join(" · ");
+                const subtitle = unwatchedNew > 0
+                  ? [c.is_finished ? `全 ${latestCount} 集` : `更新至 ${latestCount} 集`, tagLine].filter(Boolean).join(" · ")
+                  : tagLine;
                 return <MediaCard key={c.id} blockedReason={reason} title={c.title} cover={c.cover} score={c.score}
-                  badge={c.is_finished ? "已完结" : `${c.episode_count} 集`}
-                  subtitle={c.tags?.slice(0, 2).join(" · ")}
-                  progress={progress ? (progress.t >= 1 ? `第 ${progress.ep} 集 · ${fmtTime(progress.t)}` : `第 ${progress.ep} 集`) : undefined}
+                  badge={unwatchedNew > 0 ? `新更 ${unwatchedNew} 集` : (c.is_finished ? "已完结" : `${latestCount || c.episode_count} 集`)}
+                  badgeTone={unwatchedNew > 0 ? "update" : "default"}
+                  subtitle={subtitle}
+                  progress={formatWatchProgress(progress, latestCount, c.is_finished)}
                   onOpen={() => {
                     if (reason) {
                       setBlockedPrompt({ id: c.id, kind: "video", reason, removableFav: tab === "fav" });
                       return;
+                    }
+                    if (tab === "fav" && unwatchedNew > 0 && latestCount > 0 && (progress?.ep ?? 0) < (favEpCounts[c.id] ?? latestCount)) {
+                      ackFavoriteEpisodes(c.id, latestCount);
                     }
                     const playableIds = ids.filter(id => {
                       const cached = videoCache[id];
                       return !cached || !blockReason(cached.tags);
                     });
                     const targetIndex = Math.max(0, playableIds.indexOf(c.id));
+                    const resume = resolveResumeTarget(c, progress);
                     push({
                       kind: "feed", videoIds: playableIds, index: targetIndex,
-                      title: tab === "fav" ? "我的收藏" : "观看历史", startEp: progress?.ep, startTime: progress?.t,
+                      title: tab === "fav" ? "我的收藏" : "观看历史", startEp: resume.startEp, startTime: resume.startTime,
                     });
                   }} />;
               })}
