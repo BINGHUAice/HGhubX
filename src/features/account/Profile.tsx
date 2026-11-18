@@ -29,6 +29,7 @@ function ProfileContent({ wide, active }: { wide: boolean; active: boolean }) {
   const [videoCache, setVideoCache] = useState<Record<number, Detail>>({});
   const videoCacheRef = useRef(videoCache);
   videoCacheRef.current = videoCache;
+  const refreshedFavorites = useRef(new Set<number>());
   const [postCache, setPostCache] = useState<Record<number, Post>>({});
   const postCacheRef = useRef(postCache);
   postCacheRef.current = postCache;
@@ -88,11 +89,12 @@ function ProfileContent({ wide, active }: { wide: boolean; active: boolean }) {
     : 0;
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) { refreshedFavorites.current.clear(); return; }
     let alive = true;
+    const refreshFavorites = tab === "fav" && !showingPosts;
     const missing = showingPosts
       ? visibleIds.filter(id => !postCacheRef.current[id])
-      : visibleIds.filter(id => !videoCacheRef.current[id]);
+      : visibleIds.filter(id => !videoCacheRef.current[id] || (refreshFavorites && !refreshedFavorites.current.has(id)));
     setFailedIds([]);
     if (!missing.length) { setLoading(false); return; }
     setLoading(true);
@@ -111,19 +113,27 @@ function ProfileContent({ wide, active }: { wide: boolean; active: boolean }) {
           setLoading(false);
         });
     } else {
-      Promise.allSettled(missing.map(id => api.video(id)))
-        .then(results => {
+      void (async () => {
+        const failedList: number[] = [];
+        // Keep existing cards visible while revalidating. Limit concurrent reads
+        // when returning to a list that had already loaded several pages.
+        for (let offset = 0; offset < missing.length; offset += 6) {
+          const batch = missing.slice(offset, offset + 6);
+          const results = await Promise.allSettled(batch.map(id => api.video(id)));
           if (!alive) return;
           const loaded: Record<number, Detail> = {};
-          const failedList: number[] = [];
           results.forEach((result, index) => {
-            if (result.status === "fulfilled" && result.value) loaded[missing[index]] = result.value;
-            else failedList.push(missing[index]);
+            const id = batch[index];
+            if (result.status === "fulfilled" && result.value) {
+              loaded[id] = result.value;
+              if (refreshFavorites) refreshedFavorites.current.add(id);
+            } else if (!videoCacheRef.current[id]) failedList.push(id);
           });
           setVideoCache(previous => ({ ...previous, ...loaded }));
-          setFailedIds(failedList);
-          setLoading(false);
-        });
+        }
+        setFailedIds(failedList);
+        setLoading(false);
+      })();
     }
     return () => { alive = false; };
   }, [active, idsKey, tab, showingPosts, reload]);
