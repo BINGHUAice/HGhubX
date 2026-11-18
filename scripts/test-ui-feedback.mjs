@@ -40,7 +40,10 @@ try {
     const page = document.querySelector(".ios-page");
     const head = document.querySelector(".ios-page > .shrink-0");
     const body = document.querySelector(".ios-page > .scroll-y");
-    const r = el => { const b = el.getBoundingClientRect(); return { width: b.width, left: b.left, right: b.right }; };
+    const r = el => {
+      const b = el.getBoundingClientRect(), s = getComputedStyle(el);
+      return { width: b.width, left: b.left, right: b.right, paddingLeft: parseFloat(s.paddingLeft), paddingRight: parseFloat(s.paddingRight) };
+    };
     return { viewport: window.innerWidth, page: r(page), head: r(head), body: r(body) };
   });
   // 关闭过渡/动画并等待布局稳定：.ios-page 的 padding 过渡会在中间态产生瞬时偏移，
@@ -50,36 +53,49 @@ try {
     await page.evaluate(() => new Promise(r => setTimeout(r, 250)));
     await page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   };
-  await page.setViewportSize({ width: 1280, height: 900 });
   await settle();
-  const wide = await measure();
-  report.geometry = { wide };
-  // 头栏与滚动体都限宽（< 视口）、居中（左右留白对称且 > 0）、彼此对齐。
-  for (const part of [wide.head, wide.body]) {
-    assert.ok(part.width < wide.viewport - 1, `宽屏应限宽：width=${part.width} viewport=${wide.viewport}`);
-    assert.ok(part.width <= 960 + 0.5, `宽屏上限 960：width=${part.width}`);
-    const leftGap = part.left - wide.page.left;
-    const rightGap = wide.page.right - part.right;
-    assert.ok(leftGap > 1, `宽屏应有左留白：leftGap=${leftGap}`);
-    assert.ok(Math.abs(leftGap - rightGap) <= 1, `宽屏留白应对称：left=${leftGap} right=${rightGap}`);
+  report.geometry = { wide: [], narrow: [] };
+  for (const [width, height] of [[768, 1024], [1024, 768], [1280, 900]]) {
+    await page.setViewportSize({ width, height });
+    const wide = await measure();
+    report.geometry.wide.push(wide);
+    for (const part of [wide.head, wide.body]) {
+      assert.ok(part.width < wide.viewport - 1, `宽屏应限宽：width=${part.width} viewport=${wide.viewport}`);
+      assert.ok(part.width <= 960 + 0.5, `宽屏上限 960：width=${part.width}`);
+      const leftGap = part.left - wide.page.left;
+      const rightGap = wide.page.right - part.right;
+      assert.ok(leftGap > 1, `宽屏应有左留白：leftGap=${leftGap}`);
+      assert.ok(Math.abs(leftGap - rightGap) <= 1, `宽屏留白应对称：left=${leftGap} right=${rightGap}`);
+    }
+    assert.ok(Math.abs(wide.head.width - wide.body.width) <= 1 && Math.abs(wide.head.left - wide.body.left) <= 1, "头栏与滚动体应等宽对齐");
   }
-  assert.ok(Math.abs(wide.head.width - wide.body.width) <= 1 && Math.abs(wide.head.left - wide.body.left) <= 1, "头栏与滚动体应等宽对齐");
   await page.screenshot({ path: join(output, "wide.png") });
   report.passed.push("wide-centering");
 
   // ---- 契约 2：窄屏仍全宽 ----
-  await page.setViewportSize({ width: 390, height: 844 });
-  await settle();
-  const narrow = await measure();
-  report.geometry.narrow = narrow;
-  for (const part of [narrow.head, narrow.body]) {
-    assert.ok(Math.abs(part.width - narrow.viewport) <= 1, `窄屏应全宽：width=${part.width} viewport=${narrow.viewport}`);
-    assert.ok(Math.abs(part.left - narrow.page.left) <= 1, `窄屏应贴左：left=${part.left}`);
+  for (const [width, height, safeLeft, safeRight] of [[320, 568, 0, 0], [390, 844, 0, 0], [667, 375, 44, 16]]) {
+    await page.setViewportSize({ width, height });
+    await page.evaluate(([left, right]) => {
+      document.documentElement.style.setProperty("--sal", `${left}px`);
+      document.documentElement.style.setProperty("--sar", `${right}px`);
+    }, [safeLeft, safeRight]);
+    const narrow = await measure();
+    report.geometry.narrow.push(narrow);
+    for (const part of [narrow.head, narrow.body]) {
+      assert.ok(Math.abs(part.width - narrow.viewport) <= 1, `窄屏应全宽：width=${part.width} viewport=${narrow.viewport}`);
+      assert.ok(Math.abs(part.left - narrow.page.left) <= 1, `窄屏应贴左：left=${part.left}`);
+      assert.ok(part.paddingLeft >= safeLeft + 17 && part.paddingRight >= safeRight + 17, "内容应避开两侧系统安全区");
+      assert.ok(Math.abs(part.paddingLeft - part.paddingRight - safeLeft + safeRight) <= 1, "两侧应各自使用对应的安全区");
+    }
   }
   await page.screenshot({ path: join(output, "narrow.png") });
   report.passed.push("narrow-full-width");
 
   // ---- 契约 1：同 tag 原地替换，不堆叠 ----
+  await page.evaluate(() => {
+    document.documentElement.style.removeProperty("--sal");
+    document.documentElement.style.removeProperty("--sar");
+  });
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.waitForFunction(() => document.querySelectorAll(".a-toast").length === 0);
   await page.evaluate(() => {

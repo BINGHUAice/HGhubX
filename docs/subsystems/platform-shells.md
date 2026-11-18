@@ -134,10 +134,15 @@ loopback、Windows 的自定义标题栏与注册表代理判断、Android 的 W
 
 ### 共享页面壳几何
 
-`src/styles/ios.css` 的 `.ios-page` 用 `--ios-page-max:clamp(720px, 62vw, 960px)` 给标题/头栏
-（`>.shrink-0`）与滚动体（`>.scroll-y`）同时限宽并 `margin-inline:auto` 居中，宽屏两侧留白对称；
-视口窄于 720px 时 `max-width` 不再约束，手机保持全宽全出血。改页面容器几何时同步检查标题与
-滚动体两条规则，避免只居中其一。
+`src/styles/ios.css` 的 `.ios-page` 标题与滚动体共用一条宽度规则：窄屏全宽，
+宽屏以 `clamp(720px, 62vw, 960px)` 限宽居中；不支持 `clamp()` 时用 `960px` 作上限。
+移动壳合并 Android 原生 inset 与 iOS WebView 的 CSS 安全区；标题、内容和浮动底栏按左、右
+分别留出内边距，底栏在原生手势区之上，同级滚动页继续留出最后一项的可见距离。
+挂到移动壳外的模态框与半屏面板直接读取同一套原生变量和 `env()`，低高度横屏缩小外边距，
+内容过长时在安全区内滚动。老 WebView 用原生变量回退，无需新增布局依赖。
+
+`scripts/test-ui-feedback.mjs` 的同一组几何断言覆盖 320/390px 竖屏、667px 横屏
+（模拟左右非对称安全区）、768/1024px 平板及 1280px 桌面视口。Chromium 模拟不等同于原生设备验收。
 
 ## 状态转换
 
