@@ -104,3 +104,15 @@ CI 是验证记录。命令写了不等于已经运行；报告里必须写清�
 4. 回归补一行 `docs/lessons.md`，并指向实际测试或代码路径；不要编造 issue/PR 编号。
 5. 运行与改动风险匹配的命令，记录字面输出和退出状态；不把“看过代码”写成“测试通过”。
 6. 一个 PR 只解决一个目标。发版、签名和 Release 由维护者/CI 执行，agent 不自行 tag 或发布。
+
+## 提交格式
+
+单行 Conventional Commits 主题，与既有历史一致（如 `fix(ui,tv): align page/rail geometry…`、
+`ci,test,docs: unify CI/CD into single workflow…`）：
+
+- 形状 `type(scope): subject`；跨多个类型或子系统时用逗号并列：`ci,test,docs:`、`fix(playback,startup):`。
+- type 取 `feat` / `fix` / `test` / `docs` / `refactor` / `ci` / `chore`；scope 用子系统或功能名
+  （`session`、`account`、`feed`、`playback`、`tv`、`ui`、`backend`、`lines`、`startup` 等），纯文档/CI 可省 scope。
+- subject 用小写英文祈使句，一句话说清改了什么，句尾不加句号；关联 issue/PR 直接写编号（`#138`）。
+- 历史以单行主题为主，不写 commit body；回归的维护者批准、红→绿证据与验证命令写进 PR 描述。
+- 回归与对应修复成对或相邻提交，保证 CI 可按提交二分；提交信息不得声称未运行过的验证。
