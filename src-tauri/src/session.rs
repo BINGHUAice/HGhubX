@@ -59,6 +59,20 @@ mod tests {
     }
 
     #[test]
+    fn silent_login_preserves_existing_session_on_user_mismatch() {
+        let store = SessionStore::new();
+        let origin = "https://fixture.invalid";
+        store.set(origin, "original-token".into(), json!({ "id": 9 }));
+        let original = store.snapshot(origin).unwrap();
+
+        let result = store.commit_login(
+            original.revision, origin, Some(9), "replacement-token".into(), json!({ "id": 10 }),
+        );
+        assert_eq!(result.unwrap_err(), "当前线路返回的账号与本地登录不一致，请手动重新登录");
+        assert!(store.is_current(&original), "a mismatched identity must not replace or advance the existing session");
+    }
+
+    #[test]
     fn legacy_sessions_are_not_assigned_to_current_line() {
         let store = SessionStore::new();
         *store.current.lock().unwrap() =
@@ -391,6 +405,25 @@ impl SessionStore {
 
     pub fn revision(&self) -> u64 {
         self.current.lock().unwrap().revision
+    }
+
+    /// Commit a normalized login response. Manual login may replace the user;
+    /// recovery of an existing session may only replace that user's token.
+    pub fn commit_login(
+        &self,
+        revision: u64,
+        origin: &str,
+        expected_user_id: Option<i64>,
+        token: String,
+        user: serde_json::Value,
+    ) -> Result<(), String> {
+        if expected_user_id.is_some_and(|id| user.get("id").and_then(serde_json::Value::as_i64) != Some(id)) {
+            return Err("当前线路返回的账号与本地登录不一致，请手动重新登录".into());
+        }
+        if !self.set_if_revision(revision, origin, token, user) {
+            return Err("登录期间账号状态已变化，请重试".into());
+        }
+        Ok(())
     }
 
     pub fn set_if_revision(&self, expected_revision: u64, origin: &str, token: String, user: serde_json::Value) -> bool {

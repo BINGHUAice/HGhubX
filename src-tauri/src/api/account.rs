@@ -2,7 +2,6 @@
 
 use super::Api;
 use crate::net::{base, edge};
-use crate::session::SessionStore;
 use serde_json::{json, Value};
 use tauri::State;
 
@@ -75,29 +74,13 @@ pub async fn api_login(
     if base() != origin {
         return Err("登录期间线路已变化，请重新登录".into());
     }
-    commit_login(&state.session, revision, &origin, expected_user_id, data)
-}
-
-fn commit_login(
-    session: &SessionStore,
-    revision: u64,
-    origin: &str,
-    expected_user_id: Option<i64>,
-    data: Value,
-) -> Result<Value, String> {
     let token = data
         .get("token")
         .and_then(|v| v.as_str())
         .ok_or_else(|| "登录返回缺少 token".to_string())?
         .to_string();
-    let account = normalize_account(data, origin)?;
-    let user = account["user"].clone();
-    if expected_user_id.is_some_and(|id| user.get("id").and_then(Value::as_i64) != Some(id)) {
-        return Err("当前线路返回的账号与本地登录不一致，请手动重新登录".into());
-    }
-    if !session.set_if_revision(revision, origin, token, user) {
-        return Err("登录期间账号状态已变化，请重试".into());
-    }
+    let account = normalize_account(data, &origin)?;
+    state.session.commit_login(revision, &origin, expected_user_id, token, account["user"].clone())?;
     Ok(account)
 }
 
@@ -198,7 +181,7 @@ pub async fn api_account_history_delete(state: State<'_, Api>, expected_user_id:
 
 #[cfg(test)]
 mod tests {
-    use super::{commit_login, normalize_account, normalize_account_history, SessionStore};
+    use super::{normalize_account, normalize_account_history};
     use serde_json::json;
 
     #[test]
@@ -214,19 +197,6 @@ mod tests {
         }
         assert!(normalize_account(json!({"user": {"nickname": "invalid"}}), "https://example.com").is_err());
         assert!(normalize_account(json!({"id": 0}), "https://example.com").is_err());
-    }
-
-    #[test]
-    fn silent_login_preserves_existing_session_on_user_mismatch() {
-        let store = SessionStore::new();
-        let origin = "https://fixture.invalid";
-        store.set(origin, "original-token".into(), json!({ "id": 9 }));
-        let original = store.snapshot(origin).unwrap();
-        let response = json!({ "token": "replacement-token", "user": { "id": 10 } });
-
-        let error = commit_login(&store, original.revision, origin, Some(9), response).unwrap_err();
-        assert!(error.contains("账号与本地登录不一致"));
-        assert!(store.is_current(&original), "a mismatched identity must not replace or advance the existing session");
     }
 
     #[test]
