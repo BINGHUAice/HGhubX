@@ -89,6 +89,9 @@ Feed 负责列表播放页的条目位置、详情/帖子读取、标签门、�
   缓存留在当前 Feed 实例，读取按 `lineEpoch:curId` 隔离，不把旧线路键当作当前结果。
 - 评论/选集面板只在 `active` 且 `allowed` 时保持开放；被覆盖时关闭，不阻塞返回键
   或下层 Feed。
+- 上下划切集的提示 toast 带 `tag="episode"`（`useFeedTouchGestures.ts`）；`store.tsx` 的
+  `pushToastItem` 对同 tag 原地替换内容并重置 2200ms 计时，快速连续划集只显示一张最新卡片，
+  不堆叠、不重放入场动画；无 tag 的 toast 仍按原逻辑堆叠（最多 3 张）。
 
 ## 验证命令
 
