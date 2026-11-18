@@ -48,6 +48,7 @@
 | `hghubx_mobile_hold_guide_v1` | — | 移动端首次长按倍速教程已读标记 |
 | `hghubx_tv_display_v1` | `hghubx.tv.display.v1` | TV 端缩放、过扫描与减少动效设置 |
 | `hghubx_tv_playback_v1` | `hghubx-tv-playback-v1` | TV 端连播、倍速与编码偏好 |
+| `hghubx_tv_pin_v1` | — | TV 端 4 位启动解锁 PIN 码开关与盐值摘要（不存明文密码） |
 | `CONTENT_PREFERENCES_KEY` | — | 屏蔽标签、暂停过滤、隐藏无标签内容 |
 | `ACCOUNT_KEY` | — | 按 `[origin, user.id]` 分桶的账号本地副本 |
 

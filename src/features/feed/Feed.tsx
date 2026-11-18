@@ -313,7 +313,7 @@ export default function Feed({
     episodesLength: episodes.length, effectiveLength: effectiveVideoIds.length, go,
     duration, playUrl, playKey, openTagMenu, setPanel, setTagMenu, toast,
   });
-  useEffect(() => { setBarScrubbing(barPct !== null); }, [barPct]);
+  useEffect(() => { setBarScrubbing(barPct !== null || scrub !== null); }, [barPct, scrub]);
 
   const {
     liked, collected, likePending, collectPending, followPending, heartBurst,
@@ -674,7 +674,7 @@ export default function Feed({
 
         <FeedPlayerShellChrome
           videoRef={videoRef} speedLockTargetRef={speedLockTargetRef} barRef={barRef} playbackClock={playbackClock}
-          isDesktop={isDesktop} active={active} fs={fs} idle={idle} rotated={rotated}
+          isDesktop={isDesktop} active={active} fs={fs} idle={idle} rotated={rotated} vpLandscape={vpLandscape}
           theater={theater} setTheater={setTheater} fullscreen={fullscreen} controlsLocked={controlsLocked}
           paused={paused} duration={duration} rate={rate} setRate={setRate} effRate={effRate}
           holdSpeed={holdSpeed} holdSlow={holdSlow} speedLock={speedLock} setSpeedLock={setSpeedLock} lockArmed={lockArmed}
@@ -683,7 +683,7 @@ export default function Feed({
           kind={kind} meta={meta} likeCount={likeCount} collectCount={collectCount}
           episodes={episodes} related={related} follows={store.follows} followPending={followPending}
           post={post} articleHtml={articleHtml} panel={panel} setPanel={setPanel}
-          barPct={barPct} onBarDown={onBarDown} onBarMove={onBarMove} onBarUp={onBarUp}
+          scrub={scrub} barPct={barPct} onBarDown={onBarDown} onBarMove={onBarMove} onBarUp={onBarUp}
           pickEp={pickEp} go={go} togglePip={togglePip} lockControls={lockControls} toggleFull={toggleFull} exitFs={exitFs}
           onFollow={onFollow} openTag={openTag} openTagMenu={openTagMenu} closePanels={closePanels} pushPage={store.push} toast={toast}
         />
