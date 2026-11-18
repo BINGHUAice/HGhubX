@@ -19,8 +19,9 @@
   `normalizePreferences()`、`readPreferences()`、`tagIndex()`、`blockReason()`、`update()`、
   `useContentPreferences()`。
 - 本地账号：[`src/shared/model/accountData.ts`](../../src/shared/model/accountData.ts) 的 `ACCOUNT_KEY`、`SyncState`、
-  `favoritesKnown`、`sanitize()`、`persist()`、`setUser()`、`syncAccount()`、`clearHistory()`、
-  `addHistory()`、`accountScope`。
+  `favoritesKnown`、`favEpCounts`、`sanitize()`、`persist()`、`setUser()`、`syncAccount()`、`clearHistory()`、
+  `addHistory()`、`accountScope`；收藏观看进度与新集更新计算见
+  [`src/shared/model/favoriteProgress.ts`](../../src/shared/model/favoriteProgress.ts)。
 - 应用偏好：[`src/shared/model/store.tsx`](../../src/shared/model/store.tsx) 的 `Persist`、`DEFAULTS`、
   `normalizeHistory()`、`loadPersist()`、`readThemePreference()`、`LS`、
   `STORAGE_KEYS.theme`/`autoLine`。
@@ -40,7 +41,7 @@
 
 | 运行期键 | 旧键 | 内容 |
 | --- | --- | --- |
-| `hghubx_app_v1` | `hghub_app_v1` | 游客偏好、收藏、关注、观看记录、搜索历史、音量、`muteOnStartup`、`swipeEp`、`preferHevc`、`fsIdleSecs` |
+| `hghubx_app_v1` | `hghub_app_v1` | 游客偏好、收藏、关注、观看记录、收藏已知集数基线（`favEpCounts`）、搜索历史、音量、`muteOnStartup`、`swipeEp`、`preferHevc`、`fsIdleSecs` |
 | `hghubx_swipe_ep_v2` | `hghub_swipe_ep_v2` | 上下划切集的一次性迁移标记 |
 | `hghubx_theme` | `hghub_theme` | `light`/`dark`/`system` |
 | `hghubx_auto_line` | `hg.autoLine` | 自动选线开关 |
