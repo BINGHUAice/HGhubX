@@ -171,7 +171,7 @@ type Store = {
   stack: Page[]; push: (p: PageInput) => void; openRootPage: (p: PageInput) => void; pop: () => void;
   user: User | null; setUser: (u: User | null, origin?: string) => void;
   accountScope: string; accountSync: { busy: boolean; error: string; lastSynced: number; favoritesKnown: boolean };
-  syncAccount: () => Promise<void>;
+  syncAccount: (options?: { manual?: boolean }) => Promise<void>;
   setCollected: (kind: "video" | "post", id: number, on: boolean) => Promise<void>;
   setLiked: (kind: "video" | "post", id: number, ep: number, on: boolean) => Promise<void>;
   setFollowing: (id: number, on: boolean) => Promise<void>;
