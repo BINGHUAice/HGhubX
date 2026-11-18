@@ -187,7 +187,7 @@ function ProfileContent({ wide, active }: { wide: boolean; active: boolean }) {
 
         {user && accountSync.error && <div role="alert" className="mt-3 rounded-(--r-sm) bg-s3 px-3.5 py-3 text-[13px] flex flex-wrap items-center justify-between gap-2">
           <p className="text-danger break-words flex-1 min-w-[200px]">{accountSync.error}</p>
-          <Button disabled={accountSync.busy} onClick={() => { void syncAccount().catch(() => {}); }}
+          <Button disabled={accountSync.busy} onClick={() => { void syncAccount({ manual: true }).catch(() => {}); }}
             className="inline-flex items-center min-h-9 -mx-2 px-2 text-primary font-semibold shrink-0">{accountSync.busy ? "正在重试…" : "重试同步"}</Button>
         </div>}
 
@@ -223,7 +223,7 @@ function ProfileContent({ wide, active }: { wide: boolean; active: boolean }) {
           {favoriteSyncFailed ? (
             <Empty icon={<IStar size={24} />} title="收藏状态未知"
               sub="账号同步未完成，暂时无法确认收藏内容。" action="重试"
-              onAction={() => { void syncAccount().catch(() => {}); }} />
+              onAction={() => { void syncAccount({ manual: true }).catch(() => {}); }} />
           ) : syncingFavorites ? (
             <FavoriteSyncState wide={wide} />
           ) : loading && !cardsCount ? (
