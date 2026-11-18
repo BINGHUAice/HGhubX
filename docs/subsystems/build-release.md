@@ -61,8 +61,8 @@ ad-hoc 签名都不应进入仓库或本机脚本输出。
    - `frontend`：Node 22、pnpm 10、版本字段检查、文档链接、标准版与 TV 版 `pnpm build`、尺寸预算。
    - `rust`：Linux 系统依赖、`cargo check --all-targets`、`cargo test --lib`。
    - `smoke`：安装 Chromium，运行 `pnpm test:smoke`。
-   - `playback`：优先使用运行器的 FFmpeg 和浏览器；缺 FFmpeg 时先用运行器原软件源，
-     失败再回退到 Ubuntu 官方归档源。单次工作流内按矩阵并行执行 `core` 与 `extended`
+   - `playback`：优先使用运行器的 FFmpeg 和浏览器；需要安装 FFmpeg 时沿用维护者指定的
+     `https://mirrors.edge.kernel.org/ubuntu/`，失败不自动换源。单次工作流并行执行 `core` 与 `extended`
      （覆盖 `seek,legacy,lifecycle,gesture,proxy,portrait-fit,ios-native,recovery,review,tv`）；
      手动 `mode=playback` 可只跑播放诊断或指定 `scenarios` 子集。
 5. CI/CD 打包与发布（推送 `v*` tag 或手动 `mode=package`）：在分支上手动运行且 `tag` 留空时，
@@ -107,6 +107,13 @@ ad-hoc 签名都不应进入仓库或本机脚本输出。
   读取版本说明 → 创建/更新 GitHub Release。在分支上手动运行且 `tag` 留空不进入发布 job。
 
 ## 约束与失败行为
+
+- 安装播放测试依赖时，只修改临时 CI 运行器的软件源，不影响客户端的线路或本机配置。
+  [CI 44402407330](https://github.com/zxsos/HGhubX/actions/runs/44402407330/job/135148647519)
+  的扩展用例曾在安装 FFmpeg 前遇到镜像握手失败和连接超时，最终报
+  `E: Unable to locate package ffmpeg`（退出 `100`），未执行播放用例。为绕开该故障曾临时添加
+  Ubuntu 官方归档源回退；维护者确认保留原镜像后已撤销。之后遇到相同失败，按环境故障记录，
+  保持原镜像重跑；替换镜像或添加换源回退前须获明确同意。
 
 - 版本字段必须同步：`package.json`、`src-tauri/tauri.conf.json`、`src-tauri/Cargo.toml`、
   `src-tauri/Cargo.lock` 的 `hghubx`。只改一处会造成“关于页/更新检查/安装包”版本错位。
