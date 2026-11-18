@@ -59,6 +59,8 @@ export type Toast = {
   icon?: "ok" | "heart" | "star" | "info";
   /** 线路切换专用的结构化内容，有这个就不看 msg */
   line?: { region: "cn" | "intl"; host: string; ms: number };
+  /** 同 tag 的 toast 原地替换（如划集提示），快速触发不堆叠。 */
+  tag?: string;
 };
 
 /** 观看记录：看到第几集、第几秒（`dur` 用来判断是否已看完） */
@@ -203,7 +205,7 @@ type Store = {
   volume: number; setVolume: (v: number) => void;
   searchHist: string[]; addSearch: (q: string) => void; clearSearchHist: () => void;
   strictSecurity: boolean; strictSecurityReady: boolean; securityPending: boolean; cliRelaxed: boolean; setStrictSecurity: (on: boolean) => Promise<void>;
-  toasts: Toast[]; toast: (msg: string, icon?: Toast["icon"]) => void;
+  toasts: Toast[]; toast: (msg: string, icon?: Toast["icon"], tag?: string) => void;
   /** 线路切换计数：变了就让列表页重挂载，重新拉一遍数据 */
   lineEpoch: number;
 };
@@ -215,15 +217,31 @@ let seq = 0;
 /* 独立订阅 Toast 列表：弹出/消失只重渲染 ToastHost，不惊动全应用 30 个 useStore() 页面 */
 let toastList: Toast[] = [];
 let toastNextId = 0;
+const toastTimers = new Map<number, number>();
 const toastListeners = new Set<() => void>();
 function updateToasts(updater: (prev: Toast[]) => Toast[]) {
   toastList = updater(toastList);
   toastListeners.forEach((fn) => fn());
 }
+function scheduleToastRemoval(id: number, durationMs: number) {
+  const prev = toastTimers.get(id);
+  if (prev !== undefined) window.clearTimeout(prev);
+  toastTimers.set(id, window.setTimeout(() => {
+    toastTimers.delete(id);
+    updateToasts((list) => list.filter((x) => x.id !== id));
+  }, durationMs));
+}
 function pushToastItem(item: Omit<Toast, "id">, durationMs: number) {
+  const existing = item.tag ? toastList.find((x) => x.tag === item.tag) : undefined;
+  if (existing) {
+    // 同 tag：原地换内容并重置计时——不新增卡片、不重放入场动画。
+    updateToasts((prev) => prev.map((x) => (x.id === existing.id ? { ...item, id: existing.id } : x)));
+    scheduleToastRemoval(existing.id, durationMs);
+    return;
+  }
   const id = ++toastNextId;
   updateToasts((prev) => [...prev.slice(-2), { ...item, id }]);
-  window.setTimeout(() => updateToasts((prev) => prev.filter((x) => x.id !== id)), durationMs);
+  scheduleToastRemoval(id, durationMs);
 }
 const subscribeToasts = (fn: () => void) => {
   toastListeners.add(fn);
@@ -334,8 +352,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [strictSecurityReady]);
 
-  const toast = useCallback((msg: string, icon?: Toast["icon"]) => {
-    pushToastItem({ msg, icon }, 2200);
+  const toast = useCallback((msg: string, icon?: Toast["icon"], tag?: string) => {
+    pushToastItem({ msg, icon, tag }, 2200);
   }, []);
   /** 自动选线切换成功后由 `autoLine.ts` 派发，这里只负责显示 */
   useEffect(() => {

@@ -93,6 +93,9 @@ Feed 负责列表播放页的条目位置、详情/帖子读取、标签门、�
   或下层 Feed。
 - 手势 overlay 的挂载只取决于条目是否活跃，不取决于 `playUrl` 是否已解析；否则切集
   过渡期的触摸会被列表原生滚动吃掉（2.2.0 反馈的连划跳视频根因）。
+- 上下划切集的提示 toast 带 `tag="episode"`（`useFeedTouchGestures.ts`）；`store.tsx` 的
+  `pushToastItem` 对同 tag 原地替换内容并重置 2200ms 计时，快速连续划集只显示一张最新卡片，
+  不堆叠、不重放入场动画；无 tag 的 toast 仍按原逻辑堆叠（最多 3 张）。
 
 ## 验证命令
 

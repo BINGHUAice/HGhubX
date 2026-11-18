@@ -24,6 +24,8 @@
 | 2026-11-19 | 连划切集跳视频 | 开启上下划切集后快速连划，第二划切到别的视频而非下一集 | 切集后新集地址未解析前 `playUrl` 为空，手势 overlay 卸载成封面 div，触摸落到可滚动列表触发 `resolveSwipe` | 活跃条目的手势 overlay 必须常驻（`playUrl` 为空时内部渲染封面），过渡期手势不中断 | `src/features/feed/Feed.tsx`；`scripts/test-playback.mjs` gesture 场景（swipe-ep 延迟闸门） |
 | 2026-11-19 | 启动掉登录 | 镜像线路重启后要求重新登录，启动时发布页超时必现 | `app_boot` 严格模式下把「本进程发布页未验证」等同于登出，即使会话绑在当前线路 | boot 可见性走 `boot_credentials_visible()`：绑当前线路的会话保持可见；`edge` 未验证镜像不发 token 仍 fail closed | `src-tauri/src/session.rs` 的 boot 可见性测试；`src-tauri/src/api/platform.rs` |
 | 2026-11-19 | 镜像账号 401 循环 | 非主线路同步面板裸显示「401；401」并反复重试 | 镜像/CDN 不认其它线路签发或 rebase 过来的 token，客户端没有恢复路径 | 账号 401 用本机凭据在当前线路静默重登一次并重试；失败给可操作提示并清失效凭据，同一 generation 不循环重登 | `src/shared/model/accountData.ts`；`scripts/test-account-sync-empty-state.mjs` 的 401 场景 |
+| 2026-11-19 | 划集提示堆叠 | 快速上下划切集时「第 N 集」提示卡片连弹多张、互相覆盖 | `pushToastItem` 每次都新增卡片，没有同语义合并；划集 toast 无 tag | 同 `tag` 的 toast 原地替换内容并重置消失计时（不新增卡片、不重放入场动画）；无 tag 仍堆叠。划集提示固定 `tag="episode"` | `src/shared/model/store.tsx` 的 `pushToastItem`/`scheduleToastRemoval`、`src/features/feed/useFeedTouchGestures.ts`；常驻回归 `scripts/test-ui-feedback.mjs`（`toast-same-tag-dedup`/`toast-ttl-reset`/`toast-untagged-stacks`，旧代码红/修复绿） |
+| 2026-11-19 | 宽屏页面未限宽居中 | 桌面宽屏下「我的」等 `.ios-page` 页面内容全宽拉伸/贴边，两侧留白不对称 | `.ios-page>.scroll-y`/`.shrink-0` 只有 `padding-inline`，没有限宽与居中 | 宽屏用 `--ios-page-max:clamp(720px,62vw,960px)` 给标题与滚动体同时限宽 + `margin-inline:auto`；窄屏 max-width 自动失效保持全宽。改容器几何要同时改标题与滚动体两条规则 | `src/styles/ios.css` 的 `.ios-page`；常驻回归 `scripts/test-ui-feedback.mjs`（`wide-centering`/`narrow-full-width`，旧代码红/修复绿） |
 
 新回归的追加方式：
 

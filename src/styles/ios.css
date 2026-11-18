@@ -122,9 +122,10 @@ html.theme-light {
 .ios-subpage-header { background:var(--p-s1); border-bottom:1px solid var(--ios-edge); }
 .ios-subpage-bar { display:flex; align-items:center; gap:10px; min-height:56px; padding-block:8px; }
 .ios-nav-btn.ios-button { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; min-width:40px; min-height:40px; padding:0; flex-shrink:0; border-radius:50%; color:var(--p-on); background:transparent; }
-.ios-page { container-type:inline-size; background:var(--p-bg); }
-.ios-page>.scroll-y { padding-inline:var(--ios-page-inset); }
-.ios-page>.shrink-0 { padding-inline:var(--ios-page-inset); }
+/* 宽屏把整页（标题/头栏 + 滚动体）限宽居中，两侧留白对称；max-width 在窄屏自动失效，手机仍全宽。 */
+.ios-page { container-type:inline-size; background:var(--p-bg); --ios-page-max:clamp(720px, 62vw, 960px); }
+.ios-page>.scroll-y { width:100%; max-width:var(--ios-page-max); margin-inline:auto; padding-inline:var(--ios-page-inset); }
+.ios-page>.shrink-0 { width:100%; max-width:var(--ios-page-max); margin-inline:auto; padding-inline:var(--ios-page-inset); }
 .ios-page-title { font-size:34px; line-height:1.2; font-weight:750; letter-spacing:-1px; }
 .ios-page-heading { padding-top:calc(var(--sat,0px) + 24px); padding-bottom:16px; }
 .ios-account-card { border-radius:28px; background:var(--p-s1); padding:22px; box-shadow:0 3px 16px rgb(0 0 0 / .035); }

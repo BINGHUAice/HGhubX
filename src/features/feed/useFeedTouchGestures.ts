@@ -35,7 +35,7 @@ type Args = {
   openTagMenu: () => void;
   setPanel: Dispatch<SetStateAction<FeedPanel>>;
   setTagMenu: Dispatch<SetStateAction<boolean>>;
-  toast: (msg: string, icon?: Toast["icon"]) => void;
+  toast: (msg: string, icon?: Toast["icon"], tag?: string) => void;
 };
 
 export function useFeedTouchGestures({
@@ -259,7 +259,7 @@ export function useFeedTouchGestures({
         const want = dir === 1 ? (total > 1 && ep < total ? ep + 1 : 0) : (ep > 1 ? ep - 1 : 0);
         if (swipeEp && kind === "video" && want) {
           setEpMap((m) => ({ ...m, [curId]: want }));
-          toast(`第 ${want}集${total ? ` / ${total}` : ""}`, "info");
+          toast(`第 ${want}集${total ? ` / ${total}` : ""}`, "info", "episode");
           try { navigator.vibrate?.(12); } catch { /* ignore */ }
           return;
         }
