@@ -24,7 +24,7 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib
 make check
 ```
 
-- `pnpm build` 执行两份 TypeScript 检查和 Vite 构建。
+- `pnpm build` 分别按 `tsconfig.json`、`tsconfig.node.json` 和 `tsconfig.tests.json` 执行三次 TypeScript 检查，再执行 Vite 构建。
 - `pnpm test:smoke` 运行不需要 ffmpeg、真实 Tauri 宿主或上游网络的稳定浏览器用例。
 - `make check` 当前执行 `test-rust`、`test-web`、`docs`、`budget`、`release-check`；**不包含** `test:smoke`。
 - `make release-check` 检查版本字段和 Android `versionCode`；发版由 CI 执行，不在本地发布。
