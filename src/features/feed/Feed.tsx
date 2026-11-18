@@ -606,11 +606,13 @@ export default function Feed({
             }
             return (
               <section key={vid} className={sectionClass} inert={!isActive || undefined} aria-hidden={!isActive || undefined}>
-                {isActive && playUrl ? (
+                {isActive ? (
                   <div ref={holdTargetRef} data-mobile-hold-target={!isDesktop || undefined}
                     className="absolute inset-0" style={{ touchAction: fs || swipeEp ? "none" : "pan-y" }}
                     onPointerDown={onDown} onPointerMove={onMove} onPointerUp={(e) => onUp(false, e)} onPointerCancel={(e) => onUp(true, e)} onLostPointerCapture={(e) => onUp(true, e)}>
-                    {/* 老 WebView 不认识 inset 简写；四边写法保证缩放舞台铺满（#138）。 */}
+                    {playUrl ? (
+                      <>
+                        {/* 老 WebView 不认识 inset 简写；四边写法保证缩放舞台铺满（#138）。 */}
                     <div style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0, transform: isDesktop ? undefined : `translate3d(${zoom.x}px, ${zoom.y}px, 0) scale(${zoom.s})`, transformOrigin: "center center", transition: isDesktop || zoom.g ? "none" : "transform .18s ease-out" }}>
                       <VideoSurface ref={videoRef} src={playUrl} poster={posterUrl} autoPlay active={active && !tagMenu && !showHoldGuide && !searching} muted={muted}
                         diagnosticContext={{ active: active && !tagMenu && !showHoldGuide && !searching, view: mode, kind, video_id: curId, episode: curEp }}
@@ -637,7 +639,15 @@ export default function Feed({
                             toast("高清播不了，已切回标准", "info");
                           }
                         }} />
-                    </div>
+                      </div>
+                      </>
+                    ) : (
+                      <div className="absolute inset-0">
+                        {(!filtering || checked[`${accountScope}:${store.lineEpoch}:${kind}:${vid}`]) &&
+                          <Img src={details[vid]?.cover || posts[vid]?.cover || ""} eager />}
+                        <div className="absolute inset-0" style={{ background: "rgba(0,0,0,.25)" }} />
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="absolute inset-0">

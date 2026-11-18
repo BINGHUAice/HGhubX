@@ -18,9 +18,9 @@
   `CONTENT_PREFERENCES_KEY`、`MAX_BLOCKED_TAGS`、`MAX_TAG_LENGTH`、`normalizeTag()`、
   `normalizePreferences()`、`readPreferences()`、`tagIndex()`、`blockReason()`、`update()`、
   `useContentPreferences()`。
-- 本地账号：[`src/shared/model/accountData.ts`](../../src/shared/model/accountData.ts) 的 `ACCOUNT_KEY`、`SyncState`、
-  `favoritesKnown`、`favEpCounts`、`sanitize()`、`persist()`、`setUser()`、`syncAccount()`、`clearHistory()`、
-  `addHistory()`、`accountScope`；收藏观看进度与新集更新计算见
+- 本地账号：[`src/shared/model/accountData.ts`](../../src/shared/model/accountData.ts) 的 `ACCOUNT_KEY`、`CREDENTIAL_KEY`、
+  `SyncState`、`favoritesKnown`、`favEpCounts`、`sanitize()`、`persist()`、`setUser()`、`syncAccount()`、`clearHistory()`、
+  `addHistory()`、`accountScope`、`saveCredential()`/`readCredential()`/`clearCredential()`；收藏观看进度与新集更新计算见
   [`src/shared/model/favoriteProgress.ts`](../../src/shared/model/favoriteProgress.ts)。
 - 应用偏好：[`src/shared/model/store.tsx`](../../src/shared/model/store.tsx) 的 `Persist`、`DEFAULTS`、
   `normalizeHistory()`、`loadPersist()`、`readThemePreference()`、`LS`、
@@ -52,6 +52,7 @@
 | `hghubx_tv_pin_v1` | — | TV 端 4 位启动解锁 PIN 码开关与盐值摘要（不存明文密码） |
 | `CONTENT_PREFERENCES_KEY` | — | 屏蔽标签、暂停过滤、隐藏无标签内容 |
 | `ACCOUNT_KEY` | — | 按 `[origin, user.id]` 分桶的账号本地副本 |
+| `CREDENTIAL_KEY`（`hghubx_credential_v1`） | — | 登录/注册成功时保存的 `{username, password}`，仅用于当前线路账号 401 后的静默重登 |
 
 应用数据目录还保存 `session.json`（会话）、`line.json`（v2 线路）、`proxy.json`（代理）、
 `security.json`（严格模式）和可选的 `playback-diagnostics.json`（诊断开关）；它们由 Rust
@@ -79,7 +80,8 @@
 6. 游客数据由 `store.tsx` 的 `saveGuest` 写入 `STORAGE_KEYS.app`；登录用户的数据写
    `ACCOUNT_KEY`。登录/退出时 `setUser()` 清空 pending、上传计时器和同步状态，但不清空本地
    收藏/历史对象；账号同步的合并、dirty history 和 `clearHistory()` 的远端删除见
-   `accountData.ts`。
+   `accountData.ts`。登录/注册成功另写 `CREDENTIAL_KEY`；显式退出、静默重登被上游拒绝
+   （密码错误）或重登返回不同账号时清除它。
 7. `SessionStore` 把 `{origin, token, user, revision}` 写入应用数据目录的 `session.json`。
    旧版本没有 `origin`，反序列化后 `token()`/`snapshot()` 不会把它分配给当前线路，升级后必须
    重新登录。`revision` 是进程内代次，不落盘；同 token 重新登录也会推进 revision。
@@ -95,6 +97,9 @@
   失败则仍更新快照并设置 `storageError`；storage 事件只接受本键或 `key=null`。
 - 账号：boot/restoreSession → `setUser()` → generation++ → 读取该 `[origin,id]` 的本地桶 →
   后台同步；失败保留旧数据，`sync.error` 展示错误，下一次 focus/online/visible 重试。
+  同步收到账号 401 且本机有凭据时，在当前线路静默重登一次并重试 me/历史；重登失败或
+  已拒绝过则 `sync.error` 给可操作文案（本线路重新登录），同一 generation 内不循环重登，
+  手动「重试同步」重置拒绝标记。
 - 收藏未知：初始/登录/失败同步 → `favoritesKnown=false` → “收藏状态未知”；
   成功返回 `favorite_video_ids`（即使为空）→ true → 才允许显示“还没有收藏”。
 - 清历史：确认 → 增加 `clearVersion`、取消定时上传 → 远端分批删除当前账号历史 →
@@ -119,6 +124,8 @@
   偏好丢失。非 Linux 平台宁可只清内存缓存，也不做全量清理。
 - 本地写入失败要可见（偏好提示、账号 `sync.error`），不能静默显示“已保存”。
 - 日志和错误提示不输出 token、账号 ID、收藏内容或完整存储值。
+- `CREDENTIAL_KEY` 是明文本地凭据，只供静默重登使用：不进入日志、IPC 返回值、同步错误文案
+  或任何上传体；静默重登仍走 `api_login`，严格模式下未验证镜像的登录拒绝（fail closed）不变。
 
 ## 验证命令
 
@@ -129,5 +136,6 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib
 ```
 
 `test-storage-migration` 覆盖旧键、写/删失败、损坏 JSON 和一次性 swipe 迁移；
-`test-account-sync-empty-state` 覆盖同步中、失败、缺收藏字段和历史失败四种“未知”状态。
+`test-account-sync-empty-state` 覆盖同步中、失败、缺收藏字段、历史失败四种“未知”状态，
+以及账号 401 静默重登成功与失败（可操作提示、清失效凭据、不循环重登）两种状态。
 这些是本地 fixture，不证明真实账号后端返回结构；真实接口变化需另加 fixture。
