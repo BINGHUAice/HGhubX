@@ -121,3 +121,6 @@ cargo test --manifest-path src-tauri/Cargo.toml --lib
 `pnpm test:playback` 使用本地 HLS fixture，需要 FFmpeg 和 Chromium；它不能替代
 iOS WKWebView、Android WebView、Linux GStreamer 的实机矩阵。`test:ios-native-media`
 检查前端传输契约，不证明真机 AVFoundation 已通过。上述命令是验证入口，不代表本轮已经运行。
+`tv` 场景入口是 `scripts/test-tv-remote.mjs`（mock Tauri IPC、真实 TV bootstrap）。视口 resize 后
+必须等焦点提交并断言 `activeElement` 命中目标控件（未命中重试一次），再读焦点派生样式；
+不得在与 resize 同一次 evaluate 里同步断言 `:focus` 样式。

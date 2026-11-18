@@ -105,6 +105,10 @@
 - 清历史：确认 → 增加 `clearVersion`、取消定时上传 → 远端分批删除当前账号历史 →
   本地写空数组；账号切换或清除代次变化时丢弃旧结果。
 - 清缓存：媒体内存缓存 → 平台缓存报告；不改账号、收藏、历史、会话、线路、代理或主题。
+- TV 启动 PIN：设置模态按 `verify → enter → confirm` 推进（`setup` 直接从 `enter` 开始）；
+  凑满 4 位时 `appendDigit` 同步清空输入缓冲并回调 `onComplete`，confirm 与 draft 不一致时清
+  draft 回 `enter`；`verify` 连续失败 5 次进入 15 秒冷却。成功后写盐值 SHA-256 摘要到
+  `hghubx_tv_pin_v1`（同步 sha256，兼容无 `crypto.subtle` 的旧 WebView），会话解锁态只存内存。
 
 ## 约束与失败行为
 
@@ -126,6 +130,8 @@
 - 日志和错误提示不输出 token、账号 ID、收藏内容或完整存储值。
 - `CREDENTIAL_KEY` 是明文本地凭据，只供静默重登使用：不进入日志、IPC 返回值、同步错误文案
   或任何上传体；静默重登仍走 `api_login`，严格模式下未验证镜像的登录拒绝（fail closed）不变。
+- TV PIN 输入缓冲只由 `appendDigit`/`removeLast`/`clearAll` 的同步路径清空；不得用 passive
+  effect 重置——步切换时 effect 晚 flush 会吞掉切换后已按的键。
 
 ## 验证命令
 
@@ -133,9 +139,12 @@
 node scripts/test-storage-migration.mjs
 node scripts/test-account-sync-empty-state.mjs
 cargo test --manifest-path src-tauri/Cargo.toml --lib
+pnpm test:playback --scenarios tv
 ```
 
 `test-storage-migration` 覆盖旧键、写/删失败、损坏 JSON 和一次性 swipe 迁移；
 `test-account-sync-empty-state` 覆盖同步中、失败、缺收藏字段、历史失败四种“未知”状态，
 以及账号 401 静默重登成功与失败（可操作提示、清失效凭据、不循环重登）两种状态。
 这些是本地 fixture，不证明真实账号后端返回结构；真实接口变化需另加 fixture。
+`test:playback --scenarios tv` 的 `pin-lock-gate-and-settings` 覆盖启动门解锁与设置模态两段输入、
+不一致回退与冷却文案。

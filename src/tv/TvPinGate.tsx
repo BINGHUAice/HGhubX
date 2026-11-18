@@ -36,10 +36,6 @@ function TvPinPad({
   digitsRef.current = digits;
   const lockedOut = cooldownLeft > 0;
 
-  useEffect(() => {
-    setDigits("");
-  }, [prompt]);
-
   const appendDigit = useCallback((digit: string) => {
     if (lockedOut) return;
     const prev = digitsRef.current;
