@@ -58,7 +58,7 @@ export default function LoginModal() {
         setErr("账号或线路已变化，请重新登录");
         return;
       }
-      saveCredential(username.trim(), password);
+      saveCredential(username.trim(), password, result.user.id, result.origin);
       setUser(result.user as User, result.origin); setPassword(""); setLoginOpen(false);
       toast(mode === "login" ? `欢迎回来，${result.user?.nickname || username}` : "注册成功", "ok");
     } catch (error) { if (mounted.current) setErr(error instanceof Error ? error.message : "操作失败，请重试"); }

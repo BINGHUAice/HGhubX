@@ -52,7 +52,7 @@
 | `hghubx_tv_pin_v1` | — | TV 端 4 位启动解锁 PIN 码开关与盐值摘要（不存明文密码） |
 | `CONTENT_PREFERENCES_KEY` | — | 屏蔽标签、暂停过滤、隐藏无标签内容 |
 | `ACCOUNT_KEY` | — | 按 `[origin, user.id]` 分桶的账号本地副本 |
-| `CREDENTIAL_KEY`（`hghubx_credential_v1`） | — | 登录/注册成功时保存的 `{username, password}`，仅用于当前线路账号 401 后的静默重登 |
+| `CREDENTIAL_KEY`（`hghubx_credential_v1`） | — | 登录/注册成功时保存的 `{username, password, userId, origin}`，仅用于同账号 401 后的静默重登；无归属的旧值不用于重登 |
 
 应用数据目录还保存 `session.json`（会话）、`line.json`（v2 线路）、`proxy.json`（代理）、
 `security.json`（严格模式）和可选的 `playback-diagnostics.json`（诊断开关）；它们由 Rust
@@ -97,8 +97,9 @@
   失败则仍更新快照并设置 `storageError`；storage 事件只接受本键或 `key=null`。
 - 账号：boot/restoreSession → `setUser()` → generation++ → 读取该 `[origin,id]` 的本地桶 →
   后台同步；失败保留旧数据，`sync.error` 展示错误，下一次 focus/online/visible 重试。
-  同步收到账号 401 且本机有凭据时，在当前线路静默重登一次并重试 me/历史；重登失败或
-  已拒绝过则 `sync.error` 给可操作文案（本线路重新登录），同一 generation 内不循环重登，
+  同步收到账号 401 且本机有同账号凭据时，由 `api_login` 核对当前会话的 origin、用户 ID 和代次；
+  自动重登只走原线路，或两端均可信且共享账号体系的线路。返回用户 ID 匹配且起始会话仍有效，
+  才提交新 token 并重试资料和历史。失败保留原会话，提示在当前线路手动登录，同一代次不循环重登；
   手动「重试同步」重置拒绝标记。
 - 收藏未知：初始/登录/失败同步 → `favoritesKnown=false` → “收藏状态未知”；
   成功返回 `favorite_video_ids`（即使为空）→ true → 才允许显示“还没有收藏”。
@@ -128,8 +129,8 @@
   偏好丢失。非 Linux 平台宁可只清内存缓存，也不做全量清理。
 - 本地写入失败要可见（偏好提示、账号 `sync.error`），不能静默显示“已保存”。
 - 日志和错误提示不输出 token、账号 ID、收藏内容或完整存储值。
-- `CREDENTIAL_KEY` 是明文本地凭据，只供静默重登使用：不进入日志、IPC 返回值、同步错误文案
-  或任何上传体；静默重登仍走 `api_login`，严格模式下未验证镜像的登录拒绝（fail closed）不变。
+- `CREDENTIAL_KEY` 保存在本机 WebView，只供静默重登使用。密码仅经 `api_login` 发送到校验过的登录接口，
+  不进入 IPC 返回值、日志或同步错误文案。账号不同不读取旧凭据；自定义线路不接收其他线路保存的凭据。
 - TV PIN 输入缓冲只由 `appendDigit`/`removeLast`/`clearAll` 的同步路径清空；不得用 passive
   effect 重置——步切换时 effect 晚 flush 会吞掉切换后已按的键。
 

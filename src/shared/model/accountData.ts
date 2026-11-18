@@ -57,17 +57,18 @@ function sanitize(value: Partial<AccountData> | null | undefined): AccountData {
 const selected = (list: number[], id: number, on: boolean) => on ? [id, ...list.filter(x => x !== id)] : list.filter(x => x !== id);
 const message = (error: unknown) => error instanceof Error ? error.message : "账号同步失败，请重试";
 const CREDENTIAL_KEY = "hghubx_credential_v1";
-type SavedCredential = { username: string; password: string };
+type SavedCredential = { username: string; password: string; userId: number; origin: string };
 /** 仅用于当前线路账号 401 后的静默重登；不进入日志、IPC 返回值或同步错误文案。 */
-const readCredential = (): SavedCredential | null => {
+const readCredential = (userId: number): SavedCredential | null => {
   try {
     const raw = JSON.parse(localStorage.getItem(CREDENTIAL_KEY) || "null") as Partial<SavedCredential> | null;
-    return raw && typeof raw.username === "string" && typeof raw.password === "string" && raw.username && raw.password
-      ? { username: raw.username, password: raw.password } : null;
+    return raw && raw.userId === userId && typeof raw.origin === "string" && raw.origin
+      && typeof raw.username === "string" && raw.username && typeof raw.password === "string" && raw.password
+      ? { username: raw.username, password: raw.password, userId, origin: raw.origin } : null;
   } catch { return null; }
 };
-export const saveCredential = (username: string, password: string) => {
-  try { localStorage.setItem(CREDENTIAL_KEY, JSON.stringify({ username, password })); } catch { /* 存储不可用时静默重登降级为手动 */ }
+export const saveCredential = (username: string, password: string, userId: number, origin: string) => {
+  try { localStorage.setItem(CREDENTIAL_KEY, JSON.stringify({ username, password, userId, origin })); } catch { /* 存储不可用时静默重登降级为手动 */ }
 };
 const clearCredential = () => { try { localStorage.removeItem(CREDENTIAL_KEY); } catch { /* ignore */ } };
 function applyInteractions(data: AccountData, incoming?: AccountInteractions): AccountData {
@@ -208,17 +209,18 @@ export function useAccountData(initialGuest: GuestData, saveGuest: (data: GuestD
       let reloginError = "";
       if (((profile.status === "rejected" && message(profile.reason) === "401")
         || (remote.status === "rejected" && message(remote.reason) === "401")) && state.current!.user) {
-        const credential = readCredential();
+        const credential = readCredential(auth.expectedUserId);
         if (credential && !authRejected.current) {
           authRejected.current = true;
           try {
-            const snapshot = await api.login(credential.username, credential.password);
+            const snapshot = await api.login(credential.username, credential.password, { ...auth, credentialOrigin: credential.origin });
             if (!isCurrent(generation)) return;
             if (snapshot.origin !== s.origin || snapshot.user?.id !== state.current!.user?.id) {
               clearCredential();
               authRejectedMsg.current = "当前线路返回的账号与本地登录不一致，请手动重新登录";
               reloginError = authRejectedMsg.current;
             } else {
+              saveCredential(credential.username, credential.password, auth.expectedUserId, auth.expectedOrigin);
               [profile, remote] = await Promise.allSettled([
                 api.me(auth),
                 (async () => { await flushHistory(); return readHistory(auth, generation); })(),
@@ -227,8 +229,8 @@ export function useAccountData(initialGuest: GuestData, saveGuest: (data: GuestD
             }
           } catch (error) {
             if (!isCurrent(generation)) return;
-            if (/密码/.test(message(error))) clearCredential();
-            authRejectedMsg.current = `当前线路不认此登录态，自动重新登录失败：${message(error)}，请手动重新登录`;
+            if (/账号与本地登录不一致|密码/.test(message(error))) clearCredential();
+            authRejectedMsg.current = "自动重新登录失败，请在当前线路手动重新登录";
             reloginError = authRejectedMsg.current;
           }
         }

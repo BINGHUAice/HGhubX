@@ -38,7 +38,9 @@ try {
       window.__ALLOW_SYNC_SUCCESS__ = !(options.rejectFirstSync || options.rejectWith401);
       window.__API_ME_CALLS__ = 0;
       window.__API_LOGIN_CALLS__ = 0;
-      if (options.seedCredential) localStorage.setItem("hghubx_credential_v1", JSON.stringify({ username: "fixture", password: options.credentialPassword }));
+      if (options.seedCredential) localStorage.setItem("hghubx_credential_v1", JSON.stringify({
+        username: "fixture", password: options.credentialPassword, userId: user.id, origin: "https://fixture.invalid",
+      }));
       window.__ACCOUNT_SYNC_GATE__ = options.delaySync
         ? new Promise(resolve => { window.__releaseAccountSync__ = resolve; })
         : Promise.resolve();
@@ -51,6 +53,8 @@ try {
           return { user, interactions: options.omitFavorites ? {} : { favorite_video_ids: options.favoriteIds }, origin: "https://fixture.invalid" };
         }
         if (command === "api_login") {
+          if (args.expectedUserId !== user.id || args.expectedOrigin !== "https://fixture.invalid"
+            || args.credentialOrigin !== "https://fixture.invalid") throw new Error("自动登录必须绑定账号与线路");
           window.__API_LOGIN_CALLS__ += 1;
           if (args.password === "fixture-pass") {
             window.__ALLOW_SYNC_SUCCESS__ = true;
