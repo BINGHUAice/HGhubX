@@ -12,6 +12,14 @@ pub fn rebase_trust(origin: &str) -> bool {
     crate::lines::is_fixed(origin) || crate::lines::is_trusted_mirror(origin)
 }
 
+/// Boot-time session visibility: a session already bound to the current line
+/// stays visible even when this process could not refresh publisher trust
+/// (flaky publish pages at boot). Sending credentials to an unverified mirror
+/// remains fail-closed in `net::edge`; only the local login state is kept.
+pub fn boot_credentials_visible(strict: bool, trusted: bool, bound_to_current: bool) -> bool {
+    !strict || trusted || bound_to_current
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Session {
     // 旧版本没有 origin：不能推断其 token 属于哪个镜像，升级后必须重新登录。
@@ -231,6 +239,16 @@ mod tests {
             store.token("https://huangguoai.com").as_deref(),
             Some("secret-token")
         );
+    }
+
+    #[test]
+    fn boot_keeps_a_session_bound_to_the_current_line_when_publisher_refresh_fails() {
+        // 2.2.0 反馈：启动时发布页验证失败不得把绑在当前线路的会话报成登出；
+        // edge 的「未验证镜像不发 token」仍然 fail closed。
+        assert!(boot_credentials_visible(true, false, true));
+        assert!(!boot_credentials_visible(true, false, false));
+        assert!(boot_credentials_visible(true, true, false));
+        assert!(boot_credentials_visible(false, false, false));
     }
 }
 
