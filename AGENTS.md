@@ -107,22 +107,84 @@ CI 是验证记录。命令写了不等于已经运行；报告里必须写清�
 
 ## 提交格式
 
-单行 Conventional Commits 主题，与既有历史一致（如 `fix(ui,tv): align page/rail geometry…`、
-`ci,test,docs: unify CI/CD into single workflow…`）：
+单行英文 Conventional Commits 主题，不写 body。规则自包含：模板内联在本节，不引用历史提交
+作为格式来源（历史可能被改写或删除）。
 
-- 形状 `type(scope): subject`；跨多个类型或子系统时用逗号并列：`ci,test,docs:`、`fix(playback,startup):`。
+- 形状 `type(scope): subject`；跨类型/子系统用逗号并列：`fix(playback,startup):`、`ci,test,docs:`。
 - type 取 `feat` / `fix` / `test` / `docs` / `refactor` / `ci` / `chore`；scope 用子系统或功能名
-  （`session`、`account`、`feed`、`playback`、`tv`、`ui`、`backend`、`lines`、`startup` 等），纯文档/CI 可省 scope。
-- subject 用小写英文祈使句，一句话说清改了什么，句尾不加句号；关联 issue/PR 直接写编号（`#138`）。
-- 历史以单行主题为主，不写 commit body；回归的维护者批准、红→绿证据与验证命令写进 PR 描述。
+  （`session`、`account`、`feed`、`playback`、`tv`、`ui`、`lines`、`startup` 等），纯文档/CI 可省 scope。
+- subject 用小写英文祈使句，一句话说清改了什么，句尾不加句号；关联 issue/PR 直接写编号（`#155`）。
+- 合并提交保留结构前缀：`Merge PR #N into <branch>: <英文 subject>`；其余一律单行主题。
+- 回归的维护者批准、红→绿证据与验证命令写进 PR 描述，不写进 commit body。
 - 回归与对应修复成对或相邻提交，保证 CI 可按提交二分；提交信息不得声称未运行过的验证。
+
+内联示例（模板，非历史引用）：
+
+```text
+feat(playback): highlight the bottom scrub rail during horizontal drag
+fix(session,startup): keep the launch overlay until agreement back handling settles (#155)
+docs: sync subsystem contracts for the staged release
+chore(release): prepare 2.3.0
+Merge PR #152 into staging: bottom scrub rail highlight and TV launch PIN
+```
 
 ## PR 描述格式
 
-仿照 #152 / #154 的中文两段式，与「提交格式」配套：
+中文两段式，骨架内联如下（不引用既有 PR 作为格式来源）：
 
-- 关联 issue 时顶部写 `Closes #N`。
-- `## 变更概览`：有序列表 `1. **行为标题**`，子 bullet 写用户可见的前后变化与文件路径（反引号）；
-  按行为而非文件罗列，docs 同步在对应条目内说明。
-- `## 验证记录`：逐条命令 + 字面结果 + 退出码；先红后绿的回归用表格列出旧代码失败现象与修复后结果。
-- 不写未运行过的验证；新增常驻测试须先经维护者同意（不变量 11），未获批时写明实测方式与「常驻回归待核实」。
+```markdown
+Closes #N            <- 仅关联 issue 时保留
+
+## 变更概览
+1. **行为标题**
+   - 用户可见的前后变化；涉及文件用反引号路径；docs 同步在本条内说明。
+2. **行为标题**
+   - ...
+
+## 验证记录
+- `命令` -> 字面结果（exit `0`）。
+- 先红后绿的回归用表格：| 用例 | 旧代码失败现象 | 修复后 |。
+```
+
+- 按行为而非文件罗列；一个 PR 只解决一个目标。
+- 不写未运行过的验证；新增常驻测试须先经维护者同意（不变量 11），未获批时写明实测方式与
+  「常驻回归待核实」。
+
+## Release 描述格式
+
+中文发布说明，标题 `HGhubX vX.Y.Z`；骨架内联如下：
+
+```markdown
+# HGhubX vX.Y.Z
+
+一句话概括本版主题；覆盖范围（桌面/移动/TV 或本轮修复面）。
+
+## 新增与优化
+1. **行为标题（#N）**：用户可见效果与入口路径。
+
+## 修复
+1. **行为标题（#N）**：症状 -> 修复后行为。
+
+## 安装与兼容提示
+- 各平台产物与安装方式；升级/覆盖安装的数据保留行为；已知限制。
+
+## 致谢
+- 贡献者/反馈者（可省）。
+
+## 验证
+- 各平台 CI job 结果与 run id；实机/浏览器回归结论。
+```
+
+- 条目按行为编号加粗；issue 编号可引（issue 不随提交删除），不引 commit sha 作为说明来源。
+- 无内容的段整段省略，不留空标题；不写未运行过的验证。
+- 发布由维护者/CI 执行；agent 只起草正文，不 tag、不 publish。
+- 模板文件为 `docs/release-notes/TEMPLATE.md`；正式正文写 `docs/release-notes/<tag>.md`，release job 读它作正文。
+
+## 其他文字（docs / lessons / UI 文案 / issue）
+
+- 简体中文；全角标点 `，。；：（）`；UI 标签与按钮名用「」；代码、命令、路径、存储键用反引号。
+- 日期 `YYYY-MM-DD`；不编造 issue/PR/commit 编号；不确定写「待核实」。
+- `docs/lessons.md` 行格式：`| 日期 | 主题 | 症状 | 根因 | 规则 | 回归测试或来源 |`，
+  来源指向真实测试或代码路径。
+- 英文只出现在：commit subject、代码标识符、命令与字面输出、CI job 名。
+- 风格规则一律内联模板自包含；历史提交/PR/Release 可能被改写或删除，不得作为格式定义的唯一来源。

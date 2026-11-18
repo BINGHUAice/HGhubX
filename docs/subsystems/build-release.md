@@ -87,6 +87,8 @@ ad-hoc 签名都不应进入仓库或本机脚本输出。
    或手动 `mode=package` 且 `tag` 非空、`platforms=all`、`quick=false`。它下载已有 artifact，用
    `softprops/action-gh-release` 上传 `artifacts/*`；如果存在 `docs/release-notes/<tag>.md` 就作为正文，
    否则开启 `generate_release_notes` 自动生成说明。
+   正文格式以 `docs/release-notes/TEMPLATE.md` 与 AGENTS.md「Release 描述格式」为准：维护者发布前
+   按模板写 `docs/release-notes/<tag>.md`；自动生成说明只是缺文件时的兜底。
 
 ## 状态转换
 
