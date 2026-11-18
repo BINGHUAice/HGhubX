@@ -181,7 +181,24 @@ async function gestureChecks(page) {
   await tap(); await tap();
   await page.waitForFunction(paused => document.querySelector('video').paused !== paused, wasPaused);
   assert.equal(await clean(), 'false', 'Double tap restores chrome and toggles playback once');
-  return {singleTapMs};
+  await page.evaluate(() => {
+    const surface = document.querySelector('video').parentElement.parentElement;
+    const bounds = surface.getBoundingClientRect();
+    surface.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerId: 92, pointerType: 'touch', button: 0, clientX: bounds.x + 80, clientY: bounds.y + 220 }));
+    surface.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 92, pointerType: 'touch', button: 0, clientX: bounds.x + 220, clientY: bounds.y + 220 }));
+  });
+  await page.waitForFunction(() => document.querySelector('[data-seek-bar]')?.dataset.scrubbing === 'true');
+  assert.equal(await page.evaluate(() => [...document.querySelectorAll('.player-root *')].some(el => {
+    const r = el.getBoundingClientRect();
+    return r.top > 120 && r.bottom < 380 && el.textContent?.includes('/ 1:30');
+  })), false, 'Horizontal gesture scrub must only highlight the bottom progress bar without a center-screen bar');
+  await page.evaluate(() => {
+    const surface = document.querySelector('video').parentElement.parentElement;
+    const bounds = surface.getBoundingClientRect();
+    surface.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 92, pointerType: 'touch', button: 0, clientX: bounds.x + 220, clientY: bounds.y + 220 }));
+  });
+  await page.waitForFunction(() => !document.querySelector('[data-seek-bar]')?.dataset.scrubbing);
+  return {singleTapMs, bottomOnlyScrub: true};
 }
 
 // issue #142 回归：手机竖屏视口 + 真实竖屏源（360x640，高>宽）。
