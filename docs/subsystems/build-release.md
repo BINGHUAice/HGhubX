@@ -57,11 +57,12 @@ ad-hoc 签名都不应进入仓库或本机脚本输出。
    `node scripts/check-doc-links.mjs`、`node scripts/check-size-budgets.mjs`、
    `node scripts/check-version-sync.mjs`。它**不包含**
    `pnpm test:smoke`；smoke 由 CI 的独立 job 和 `make test-smoke` 执行。
-4. CI/CD 日常校验（`pull_request`、分支 `push` 或手动 `mode=ci`）：
+4. CI/CD 日常校验（`pull_request`、推送 `main` 或手动 `mode=ci`）：
    - `frontend`：Node 22、pnpm 10、版本字段检查、文档链接、标准版与 TV 版 `pnpm build`、尺寸预算。
    - `rust`：Linux 系统依赖、`cargo check --all-targets`、`cargo test --lib`。
    - `smoke`：安装 Chromium，运行 `pnpm test:smoke`。
-   - `playback`：安装 FFmpeg + Chromium，单次工作流内按矩阵并行执行 `core` 与 `extended`
+   - `playback`：优先使用运行器的 FFmpeg 和浏览器；缺 FFmpeg 时先用运行器原软件源，
+     失败再回退到 Ubuntu 官方归档源。单次工作流内按矩阵并行执行 `core` 与 `extended`
      （覆盖 `seek,legacy,lifecycle,gesture,proxy,portrait-fit,ios-native,recovery,review,tv`）；
      手动 `mode=playback` 可只跑播放诊断或指定 `scenarios` 子集。
 5. CI/CD 打包与发布（推送 `v*` tag 或手动 `mode=package`）：在分支上手动运行且 `tag` 留空时，
@@ -99,8 +100,9 @@ ad-hoc 签名都不应进入仓库或本机脚本输出。
   `bundle.android.versionCode` → APK 签名 → `aapt2` 复核。
 - iOS：`ios init` 生成工程 → 补 plist → 启动 Tauri options server → Xcode release 构建 →
   `CODE_SIGNING_ALLOWED=NO` → 打包 Payload → `unzip -tq` 校验 → artifact。
-- CI：PR/push 触发 `frontend`/`rust`/`smoke`；手动触发 playback/iOS；`v*` tag 触发
-  release workflow 全平台构建，手动触发则按 `platforms` 选择全部、单平台或 check。
+- CI：PR 或推送 `main` 触发 `frontend`/`rust`/`smoke`/`playback`，不打包。
+  `v*` tag 触发全平台构建；手动打包用 `mode=package` 和 `platforms` 选范围，
+  `tag` 留空只上传 Actions 产物，不进入发布任务。
 - 发布：满足上述 tag 条件 → 等待平台 job 结束 → release job 下载已有 artifact 并合并 →
   读取版本说明 → 创建/更新 GitHub Release。在分支上手动运行且 `tag` 留空不进入发布 job。
 
