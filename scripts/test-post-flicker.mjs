@@ -68,7 +68,9 @@ try {
     if (url.origin === new URL(origin).origin) return route.continue();
     // hls.js 直接请求本机媒体代理地址；映射到本地 fixture server。
     if (url.origin === "http://hg.localhost" || url.origin === "http://127.0.0.1:17650") {
-      return route.fetch({ url: `${mediaOrigin}${url.pathname}${url.search}` }).then(response => route.fulfill({ response }));
+      return route.fetch({ url: `${mediaOrigin}${url.pathname}${url.search}` })
+        .then(response => route.fulfill({ response }))
+        .catch(() => route.abort().catch(() => {}));
     }
     if (url.origin === mediaOrigin) return route.continue();
     report.external.push(raw);
@@ -212,6 +214,9 @@ try {
   console.error(`FAIL post-flicker: ${error?.message || error}`);
   process.exitCode = 1;
 } finally {
+  // 先放行仍在途的分片请求并排空路由，避免关浏览器时 route.fetch 抛 TargetClosedError。
+  releaseSeg();
+  await page?.unrouteAll({ behavior: "ignoreErrors" }).catch(() => {});
   await browser?.close().catch(() => {});
   await vite?.close().catch(() => {});
   await new Promise(done => media?.close(done));
