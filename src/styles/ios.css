@@ -155,7 +155,10 @@ html.theme-light {
   --overlay-sat:var(--native-sat,0px); --overlay-sar:var(--native-sar,0px);
   --sab:var(--native-sab,0px); --overlay-sal:var(--native-sal,0px);
   padding:calc(var(--overlay-gap) + var(--overlay-sat)) calc(var(--overlay-gap) + var(--overlay-sar))
-    calc(var(--overlay-gap) + var(--sab)) calc(var(--overlay-gap) + var(--overlay-sal));
+    calc(var(--overlay-gap) + var(--overlay-bottom,var(--sab))) calc(var(--overlay-gap) + var(--overlay-sal));
+}
+.ios-overlay[data-avoid-native-keyboard="true"] {
+  --overlay-bottom:var(--native-ime-overlap,var(--sab));
 }
 @supports (top:max(1px,2px)) {
   /* Portals can live outside MobileShell, so read the same native/env inputs. */
@@ -164,6 +167,9 @@ html.theme-light {
     --overlay-sar:max(var(--native-sar,0px),env(safe-area-inset-right,0px));
     --sab:max(var(--native-sab,0px),env(safe-area-inset-bottom,0px));
     --overlay-sal:max(var(--native-sal,0px),env(safe-area-inset-left,0px));
+  }
+  .ios-overlay[data-avoid-native-keyboard="true"] {
+    --overlay-bottom:max(var(--sab),var(--native-ime-overlap,0px));
   }
 }
 .ios-overlay-backdrop.ios-button { position:absolute; inset:0; width:100%; height:100%; background:var(--ios-scrim); border:0; min-height:0; border-radius:0; box-shadow:none; cursor:default;  }

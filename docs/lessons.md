@@ -30,6 +30,7 @@
 | 2026-11-19 | TV resize 后焦点断言漂移 | `720p-1080p-4k-layout` 偶发 `outline-style` 读到 `none`，失败视口不固定 | `setViewportSize` 真实 resize 后渲染 widget 重建窗口内 `focus()` 静默不落地，测试同一次 evaluate 同步读 `:focus` 派生样式 | 测试在 resize 后等两帧再聚焦，并显式断言 `activeElement` 命中（未命中重试一次）；不改 `tv.css` 焦点规则。产品侧 resize 焦点兜底另案评估 | `scripts/test-tv-remote.mjs` 的 `720p-1080p-4k-layout` |
 | 2026-11-19 | 收藏集数缓存过期 | 返回仍挂载的「我的」页时，已缓存的短剧可能不显示新集 | 页面重新激活时只读取未缓存详情 | 重新激活时后台刷新已展现的收藏；限制并发，保留上次详情及实际观看断点 | `scripts/test-account-sync-empty-state.mjs` 的已缓存收藏更新场景 |
 | 2026-11-19 | 播放测试依赖镜像 | 扩展播放用例未启动，安装 FFmpeg 退出 `100` | CI 运行器访问指定 Ubuntu 镜像时握手失败或超时；临时换源回退偏离维护者配置 | 保留指定镜像；报告依赖安装失败与退出状态，只在同源重跑；更换或增加回退源先征得同意 | [CI 44402407330](https://github.com/zxsos/HGhubX/actions/runs/44402407330/job/135148647519)；`.github/workflows/ci.yml` |
+| 2026-11-19 | Android 登录软键盘遮挡 | 320 × 568 与 360 × 840 dp 下键盘盖住密码框和登录按钮，滚动仍被遮住 | 边到边 WebView 保留全屏布局，登录弹层只预留系统栏、不计算输入法遮挡 | 仅标准版登录弹层按原生输入法重叠量限制滚动区域；键盘与系统栏底部边距不叠加 | `scripts/patch-android-splash.mjs`、`src/shared/ui/ios/overlays.tsx`；模拟器复测见平台壳文档 |
 
 新回归的追加方式：
 
