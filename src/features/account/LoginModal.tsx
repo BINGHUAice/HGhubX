@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { api, isMobile } from "../../shared/api/api";
+import { api, isAndroid, isMobile } from "../../shared/api/api";
 import type { User } from "../../shared/api/types";
 import { useStore } from "../../shared/model/store";
 import { saveCredential } from "../../shared/model/accountData";
@@ -91,6 +91,6 @@ export default function LoginModal() {
     </Form>
     <p className="ios-description ios-auth-note">登录状态与当前站点绑定；使用自定义镜像时，登录请求会发送到你填写的站点，跨站点切换需重新登录。</p>
   </div>;
-  return isMobile ? <Sheet open={loginOpen} onClose={close} label={title}>{content}</Sheet>
+  return isMobile ? <Sheet open={loginOpen} onClose={close} label={title} avoidNativeKeyboard={isAndroid}>{content}</Sheet>
     : <Modal open={loginOpen} onClose={close} label={title} width={440}>{content}</Modal>;
 }
