@@ -121,6 +121,12 @@ export function PostDetail({ id, onBack, active = true }: { id: number; onBack: 
   const [mediaError, setMediaError] = useState("");
   const [readProgress, setReadProgress] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  /* 线路/代理事件只换 lineEpoch，不换帖子：已显示内容必须保留，后台刷新（issue #165）。
+     清空重置只属于「换帖子/换账号/手动重试」，否则自动选线一切线整页就闪回加载态。 */
+  const shownKeyRef = useRef("");
+  /* effect 里读最新值，避免把 loadedId/segs 加进依赖造成重复请求。 */
+  const latestView = useRef({ loadedId: null as number | null, segs: [] as string[] });
+  latestView.current = { loadedId, segs };
   const content = post?.content || "";
   const src = segs[seg] || "";
   const safeHtml = useMemo(() => sanitizeHtml(content), [content, strictSecurity]);
@@ -132,40 +138,55 @@ export function PostDetail({ id, onBack, active = true }: { id: number; onBack: 
 
   useEffect(() => {
     let alive = true;
-    setReadProgress(0);
-    scrollRef.current?.scrollTo(0, 0);
-    setPost(null);
-    setLoadedId(null);
-    setTagMenu(false);
-    setErr(null);
-    setPlay(false);
-    setSegs([]);
-    setSeg(0);
+    const key = `${accountScope}:${id}`;
+    /* 手动重试也要清空：reload 计数进 key，而不是只看「大于 0」。 */
+    const reset = shownKeyRef.current !== `${key}:${reload}`;
+    shownKeyRef.current = `${key}:${reload}`;
+    if (reset) {
+      setReadProgress(0);
+      scrollRef.current?.scrollTo(0, 0);
+      setPost(null);
+      setLoadedId(null);
+      setTagMenu(false);
+      setErr(null);
+      setPlay(false);
+      setSegs([]);
+      setSeg(0);
+    }
     api.post(id)
       .then((p) => {
         if (!alive) return;
         setPost(p);
         setLoadedId(id);
+        setErr(null);
         /* 旧接口返回直链时提供回退，不覆盖已经解析出的分段。 */
         if (p.video_url) { setSegs(previous => previous.length ? previous : [p.video_url!]); setPlay(true); }
       })
-      .catch((e) => { if (alive) setErr((e as Error).message || "加载失败"); });
+      .catch((e) => {
+        if (!alive) return;
+        /* 后台刷新失败不打断正在阅读的内容；首次加载失败才显示整页错误。 */
+        if (latestView.current.loadedId !== id) setErr((e as Error).message || "加载失败");
+      });
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, reload, lineEpoch, accountScope]);
 
   useEffect(() => {
     if (!allowed) { setResolving(false); return; }
     let alive = true;
-    setResolving(true); setMediaError("");
+    /* 已有可播地址时静默刷新：遮罩与错误条只在没有画面时出现。 */
+    const silent = latestView.current.segs.length > 0;
+    setResolving(!silent); setMediaError("");
     api.postPlayback(id)
       .then((r) => {
         if (!alive) return;
         const list = (r?.videos || []).map((v) => v?.url || "").filter(Boolean);
         if (list.length) { setSegs(list); setPlay(true); }
       })
-      .catch(e => { if (alive) setMediaError(e instanceof Error ? e.message : "视频解析失败"); })
+      .catch(e => { if (alive && !silent) setMediaError(e instanceof Error ? e.message : "视频解析失败"); })
       .finally(() => { if (alive) setResolving(false); });
     return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, reload, mediaRetry, allowed, lineEpoch, accountScope]);
 
   // Keep blocked content out of the surface while the host navigates back.
