@@ -9,7 +9,7 @@ import "../src/index.css";
 // 并派发真实的 hg:line-changed / hg:proxy-changed 事件（issue #165）。
 const post = (id: number) => ({
   id, title: `示例帖子 ${id}`, cover: "https://fixture.invalid/cover.jpg", tags: ["都市"],
-  hot: 1200, content: `<p>这是第 ${id} 篇帖子的正文。</p>${"<p>正文段落，用于撑开滚动高度。</p>".repeat(40)}`,
+  hot: 1200, content: `<p>这是第 ${id} 篇帖子的正文。</p><img src="https://fixture.invalid/article.jpg" alt="正文配图">${"<p>正文段落，用于撑开滚动高度。</p>".repeat(40)}`,
   counts: { like: 3, comment: 2, collect: 1 }, publish_time: "2026-11-19 10:00",
 });
 const fixture = {

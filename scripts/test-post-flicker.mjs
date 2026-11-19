@@ -68,6 +68,10 @@ try {
     if (url.origin === new URL(origin).origin) return route.continue();
     // hls.js 直接请求本机媒体代理地址；映射到本地 fixture server。
     if (url.origin === "http://hg.localhost" || url.origin === "http://127.0.0.1:17650") {
+      if (url.pathname === "/img") return route.fulfill({
+        contentType: "image/svg+xml",
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180"><rect width="320" height="180" fill="teal"/></svg>',
+      });
       return route.fetch({ url: `${mediaOrigin}${url.pathname}${url.search}` })
         .then(response => route.fulfill({ response }))
         .catch(() => route.abort().catch(() => {}));
@@ -96,9 +100,14 @@ try {
   const history = () => page.evaluate(() => window.postFlickerFixture.history);
   const mark = () => page.evaluate(() => window.postFlickerFixture.events.length);
 
-  // 滚到正文中部，模拟阅读位置。
+  // 滚到正文中部，模拟阅读位置。阅读进度更新不能用相同 HTML 重建已加载的配图。
+  const progress = page.getByRole("progressbar", { name: "阅读进度" });
+  const progressBefore = await progress.getAttribute("aria-valuenow");
+  await page.waitForFunction(() => document.querySelector(".article-body img")?.naturalWidth > 0);
+  await page.locator(".article-body img").evaluate(img => { window.__postImage = img; });
   await page.evaluate(() => { const sc = document.querySelector("[data-post-scroll]"); sc.scrollTop = Math.round((sc.scrollHeight - sc.clientHeight) * 0.5); });
-  await sleep(200);
+  await page.waitForFunction(before => document.querySelector('[aria-label="阅读进度"]').getAttribute("aria-valuenow") !== before, progressBefore);
+  assert(await page.locator(".article-body img").evaluate(img => img === window.__postImage), "更新阅读进度不得重建正文图片");
   const before = await state();
   assert(before.article && before.scrollTop > 100, `前置：应处于正文中部 ${JSON.stringify(before)}`);
   await page.evaluate(() => { window.__postVideo = document.querySelector("video"); });
@@ -115,6 +124,7 @@ try {
     const fresh = (await events()).slice(at);
     assert.equal(after.title, before.title, `${eventName} 后标题必须保留`);
     assert(after.article, `${eventName} 后正文必须保留`);
+    assert(await page.locator(".article-body img").evaluate(img => img === window.__postImage), `${eventName} 后相同正文不得重建图片`);
     assert(Math.abs(after.scrollTop - before.scrollTop) <= 2, `${eventName} 后滚动位置必须保留：${before.scrollTop} → ${after.scrollTop}`);
     assert(!after.fullLoader, `${eventName} 后不得出现整页 Loader`);
     assert(!fresh.some(e => e.type === "page.del" || e.type === "player.del"), `${eventName} 不得卸载页面/播放器：${JSON.stringify(fresh)}`);
