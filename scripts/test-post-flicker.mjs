@@ -28,6 +28,11 @@ const mediaDir = await mkdtemp(join(tmpdir(), "hghubx-post-flicker-"));
 execFileSync(process.env.FFMPEG_PATH || "ffmpeg", ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=15", "-t", "60", "-c:v", "libx264", "-preset", "ultrafast", "-g", "30", "-sc_threshold", "0", "-pix_fmt", "yuv420p", "-an", "-f", "hls", "-hls_time", "2", "-hls_playlist_type", "vod", "-hls_segment_filename", join(mediaDir, "seg%03d.ts"), join(mediaDir, "list.m3u8")], { timeout: 60000, stdio: "pipe" });
 const manifest = await readFile(join(mediaDir, "list.m3u8"), "utf8");
 let segDelayMs = 0;
+// 3b 用「闸门」确定性地制造持续缓冲：holdSeg=true 时分片请求挂起，
+// 直到测试观察到转圈后调用 releaseSeg()。比固定延迟可靠（延迟太短会被 hls.js 的前向缓冲吸收）。
+let holdSeg = false;
+const segGates = new Set();
+const releaseSeg = () => { holdSeg = false; for (const done of segGates) done(); segGates.clear(); };
 media = createHttpServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
   try {
@@ -39,6 +44,7 @@ media = createHttpServer(async (req, res) => {
     } else if (url.pathname === "/seg") {
       const name = new URL(url.searchParams.get("u")).pathname.split("/").pop();
       if (segDelayMs) await sleep(segDelayMs);
+      if (holdSeg) await new Promise(done => { segGates.add(done); });
       body = await readFile(join(mediaDir, name)); kind = "video/mp2t";
     } else { res.writeHead(404); res.end(); return; }
     res.writeHead(200, { "Content-Type": kind, "Content-Length": body.length, "Access-Control-Allow-Origin": "*" });
@@ -174,19 +180,24 @@ try {
   const shortEvents = (await events()).slice(atShort).filter(e => e.type === "spinner.add");
   assert.equal(shortEvents.length, 0, `短暂缓冲不得闪转圈：${JSON.stringify(shortEvents)}`);
   report.passed.push("brief-buffering-no-spinner");
-  // 3b：分片延迟 1200ms（>300ms）→ 必须出现转圈，恢复后消失。
-  segDelayMs = 1200;
-  await jumpTo(40);
-  await page.waitForFunction(() => document.querySelector("video").currentTime >= 39.5, null, { timeout: 20000 });
+  // 3b：闸门挂起分片 → 缓冲必然耗尽 → 持续 waiting 超过 300ms 窗口 → 必须出现转圈；
+  //     放行后恢复播放，转圈必须消失。用确定性闸门而非固定延迟（延迟会被前向缓冲吸收）。
+  //     跳到接近片尾（前向缓冲只剩 ~2s），确保闸门能真正饿死缓冲。
+  await page.evaluate(() => { window.__waitCount = 0; });
+  holdSeg = true;
+  await jumpTo(57);
+  await page.waitForFunction(() => document.querySelector("video").currentTime >= 56.5, null, { timeout: 20000 });
   const atLong = await mark();
-  // 300ms 去抖窗内不得出现；持续缓冲超过窗口后必须出现。
+  // 等真实 waiting 发生（缓冲耗尽），再验证去抖窗口。
+  await page.waitForFunction(() => window.__waitCount >= 1, null, { timeout: 20000 });
   await sleep(150);
   assert(!(await page.evaluate(() => !!document.querySelector(".post-player .spinner"))), "去抖窗内不得提前显示转圈");
   await page.waitForFunction(() => !!document.querySelector(".post-player .spinner"), null, { timeout: 15000 });
-  segDelayMs = 0;
-  await playing();
-  await page.waitForFunction(() => !document.querySelector(".post-player .spinner"), null, { timeout: 15000 });
   assert((await events()).slice(atLong).some(e => e.type === "spinner.add"), "持续缓冲必须显示转圈");
+  releaseSeg();
+  // 片尾附近恢复后可能很快 ended；只要求恢复解码并继续推进，不强制未暂停。
+  await page.waitForFunction(() => { const v = document.querySelector("video"); return v && v.readyState >= 3 && v.currentTime >= 57; }, null, { timeout: 20000 });
+  await page.waitForFunction(() => !document.querySelector(".post-player .spinner"), null, { timeout: 15000 });
   report.passed.push("sustained-buffering-shows-spinner");
 
   assert.equal(errors.length, 0, `页面脚本错误：${errors.join(" | ")}`);
