@@ -104,6 +104,9 @@ Feed 负责列表播放页的条目位置、详情/帖子读取、标签门、�
   仅 `lineEpoch` 变化保留已显示的 `post`、正文与滚动位置，后台重拉 `api_post` 与
   `api_post_playback`，播放地址解析失败保留旧地址不清空。否则整页回加载态会卸载播放器
   portal，视频从 0 重播（issue #165）。
+- 吃瓜详情的正文仅在正文内容或安全模式改变时重新清洗。渲染时复用同一个
+  `dangerouslySetInnerHTML` 属性对象；滚动更新「阅读进度」以及刷新得到同一正文时不替换
+  图片节点，避免懒加载图片反复消失、重载和撑开布局（issue #165）。
 - 上下划切集的提示 toast 带 `tag="episode"`（`useFeedTouchGestures.ts`）；`store.tsx` 的
   `pushToastItem` 对同 tag 原地替换内容并重置 2200ms 计时，快速连续划集只显示一张最新卡片，
   不堆叠、不重放入场动画；无 tag 的 toast 仍按原逻辑堆叠（最多 3 张）。

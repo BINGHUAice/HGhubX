@@ -129,7 +129,8 @@ export function PostDetail({ id, onBack, active = true }: { id: number; onBack: 
   latestView.current = { loadedId, segs };
   const content = post?.content || "";
   const src = segs[seg] || "";
-  const safeHtml = useMemo(() => sanitizeHtml(content), [content, strictSecurity]);
+  // React 会在 HTML 属性对象身份变化时重写 innerHTML；滚动不能让配图重新加载。
+  const articleHtml = useMemo(() => ({ __html: sanitizeHtml(content) }), [content, strictSecurity]);
   const openSafeLink = (url: string) => {
     api.openUrl(url).catch(() => {
       copyText(url).then(() => toast("链接已复制", "ok")).catch(() => toast("复制失败", "info"));
@@ -300,7 +301,7 @@ export function PostDetail({ id, onBack, active = true }: { id: number; onBack: 
               </div>
               {currentPost.content && (
                 (isHtml(currentPost.content) || (!strictSecurity && /<[a-z][\s\S]*>/i.test(currentPost.content)))
-                  ? <div className="article-body mt-3.5" onClick={(e) => handleArticleClick(e, openSafeLink)} dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                  ? <div className="article-body mt-3.5" onClick={(e) => handleArticleClick(e, openSafeLink)} dangerouslySetInnerHTML={articleHtml} />
                   : <Surface className="mt-3.5 rounded-(--r-md) bg-s2 p-3.5 text-[14px] leading-relaxed text-on/80 whitespace-pre-wrap">{currentPost.content}</Surface>
               )}
             </div>
