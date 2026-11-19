@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { ILockF, Logo } from "../shared/ui/icons";
+import { Logo } from "../shared/ui/icons";
 import { disableTvPin, enableTvPin, unlockTvSession, useTvPin, verifyTvPin } from "./pinLock";
 import { focusElement, useRemoteScope, type RemoteKey } from "./remote";
 import { TvModal } from "./ui";
@@ -281,7 +281,6 @@ export default function TvPinGate({ children }: { children: ReactNode }) {
           <Logo size={34} />
           <div>
             <h1>HGhubX <small>TV</small></h1>
-            <span><ILockF size={16} /> 已启用启动密码保护</span>
           </div>
         </div>
         <TvPinPad
@@ -302,7 +301,6 @@ export default function TvPinGate({ children }: { children: ReactNode }) {
             }
           }}
         />
-        <p className="tv-pin-hint">遥控器方向键选择或直接按数字键输入 · 返回键退出</p>
       </section>
     </main>
   );

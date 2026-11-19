@@ -110,6 +110,7 @@
   凑满 4 位时 `appendDigit` 同步清空输入缓冲并回调 `onComplete`，confirm 与 draft 不一致时清
   draft 回 `enter`；`verify` 连续失败 5 次进入 15 秒冷却。成功后写盐值 SHA-256 摘要到
   `hghubx_tv_pin_v1`（同步 sha256，兼容无 `crypto.subtle` 的旧 WebView），会话解锁态只存内存。
+  启动解锁页保留标题、PIN 输入提示与必要的错误反馈，不加装饰性副标题或页脚说明。
 
 ## 约束与失败行为
 
