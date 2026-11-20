@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type Dispatch, type MutableRefObject, type
 import type { PlaybackClock, VideoHandle } from "../playback";
 import type { Toast } from "../../shared/model/store";
 import { createHoldSpeed, getHoldPoint, getHoldZone, isInsideHoldTarget, shiftHoldSpeed, HOLD_DELAY_MS, type HoldRect, type HoldRotation, type HoldSpeed, type HoldZone } from "./mobileHold";
+import { resolveFullscreenEpisodeSwipe } from "./fullscreenEpisodeSwipe";
 import type { FeedPanel, PinchState } from "./useFeedViewport";
 
 type Args = {
@@ -32,7 +33,6 @@ type Args = {
   duration: number;
   playUrl: string;
   playKey: string;
-  openTagMenu: () => void;
   setPanel: Dispatch<SetStateAction<FeedPanel>>;
   setTagMenu: Dispatch<SetStateAction<boolean>>;
   toast: (msg: string, icon?: Toast["icon"], tag?: string) => void;
@@ -41,7 +41,7 @@ type Args = {
 export function useFeedTouchGestures({
   boxRef, videoRef, pinchRef, playbackClock, isDesktop, active, controlsLocked, showHoldGuide,
   rotated, fs, clean, setClean, idle, setIdle, arm, wake, swipeEp, kind, curId, epMap, setEpMap,
-  episodesLength, effectiveLength, go, duration, playUrl, playKey, openTagMenu, setPanel, setTagMenu, toast,
+  episodesLength, effectiveLength, go, duration, playUrl, playKey, setPanel, setTagMenu, toast,
 }: Args) {
   const [holdSpeed, setHoldSpeed] = useState(0);
   const [holdSlow, setHoldSlow] = useState(false);
@@ -134,12 +134,13 @@ export function useFeedTouchGestures({
         cur.mode = "hold";
         if (cur.zone === "menu") {
           holdRef.current = false;
-          openTagMenu();
-        } else {
-          holdRef.current = true;
-          if (cur.zone === "slow") setHoldSlow(true);
-          else { cur.speed = createHoldSpeed(cur.x); setHoldSpeed(cur.speed.rate); }
+          setLockArmed(false);
+          lockArmedRef.current = false;
+          return;
         }
+        holdRef.current = true;
+        if (cur.zone === "slow") setHoldSlow(true);
+        else { cur.speed = createHoldSpeed(cur.x); setHoldSpeed(cur.speed.rate); }
         setLockArmed(false);
         lockArmedRef.current = false;
         try { navigator.vibrate?.(25); } catch { /* ignore */ }
@@ -167,7 +168,7 @@ export function useFeedTouchGestures({
     if (!g || isDesktop) return;
     const dx = point.x - g.x, dy = point.y - g.y;
 
-    /* 长按中：加速区左右滑换挡；移入顶部胶囊才 armed，减速/不感兴趣区不锁 */
+    /* 长按中：加速区左右滑换挡；移入顶部胶囊才 armed，减速/中心区不锁 */
     if (g.mode === "hold") {
       if (g.zone !== "fast") return;
       const step = g.speed && shiftHoldSpeed(g.speed, point.x); if (step) setHoldSpeed(step);
@@ -253,9 +254,23 @@ export function useFeedTouchGestures({
       const dy = point.y - g.startY;
       const dx2 = point.x - g.x;
       if (Math.abs(dy) > 56 && Math.abs(dy) > Math.abs(dx2)) {
-        const dir = dy < 0 ? 1 : -1;
         const ep = epMap[curId] || 1;
         const total = episodesLength;
+        if (fs && kind === "video") {
+          const result = resolveFullscreenEpisodeSwipe(ep, total, dy);
+          if (result && "message" in result) {
+            toast(result.message, "info");
+            return;
+          }
+          if (result) {
+            const want = result.target;
+            setEpMap((m) => ({ ...m, [curId]: want }));
+            toast(`第 ${want}集${total ? ` / ${total}` : ""}`, "info", "episode");
+            try { navigator.vibrate?.(12); } catch { /* ignore */ }
+            return;
+          }
+        }
+        const dir = dy < 0 ? 1 : -1;
         const want = dir === 1 ? (total > 1 && ep < total ? ep + 1 : 0) : (ep > 1 ? ep - 1 : 0);
         if (swipeEp && kind === "video" && want) {
           setEpMap((m) => ({ ...m, [curId]: want }));
@@ -280,7 +295,8 @@ export function useFeedTouchGestures({
         lastTapRef.current.idle = idle;
         setClean(!clean);
         if (!isDesktop && fs) setIdle(!idle);
-        if (!isDesktop && fs && idle) arm();
+        /* Re-arm the auto-hide timer whenever fullscreen controls become visible. */
+        if (!isDesktop && fs) arm();
         lastTapRef.current.timer = window.setTimeout(() => {
           lastTapRef.current.timer = null;
         }, 230) as unknown as number;

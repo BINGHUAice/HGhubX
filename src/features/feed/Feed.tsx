@@ -11,8 +11,8 @@ import { PlaybackLock, VideoSurface, createPlaybackClock, type VideoHandle } fro
 import { tracePlayback } from "../../shared/diagnostics/playbackDiagnostics";
 import { useContentPreferences } from "../../shared/model/contentPreferences";
 import { TagBlockMenu } from "../../shared/ui/TagBlockMenu";
-import { PreferenceStorageNotice } from "../../shared/ui/PreferenceStorageNotice";
 import { InplaceSearch } from "../search/InplaceSearch";
+import { PreferenceStorageNotice } from "../../shared/ui/PreferenceStorageNotice";
 import MobileHoldGuide from "./MobileHoldGuide";
 import { useFsIdle } from "./fsIdle";
 import { useMobileHoldGuide } from "./useMobileHoldGuide";
@@ -55,6 +55,8 @@ export default function Feed({
   const { preferences, revision, blockReason } = contentPreferences;
   const filtering = !preferences.paused && (preferences.blockedTags.length > 0 || preferences.hideUntagged);
   const [tagMenu, setTagMenu] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [tagSelection, setTagSelection] = useState<string[]>([]);
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [tagErrors, setTagErrors] = useState<Record<string, string>>({});
   const [originEpoch, setOriginEpoch] = useState(0);
@@ -95,7 +97,6 @@ export default function Feed({
   const [vsize, setVsize] = useState({ key: "", w: 0, h: 0 });
   const [paused, setPaused] = useState(false);
   const [controlsLocked, setControlsLocked] = useState(false);
-  const [searching, setSearching] = useState(false);
   const [rate, setRate] = useState(1);
   const [waiting, setWaiting] = useState(false);
   const [err, setErr] = useState("");
@@ -156,10 +157,16 @@ export default function Feed({
   const allowed = !filtering || (tagsReady && !blocked);
   const closePanels = () => { setPanel(null); setTagMenu(false); };
   const openPreferences = () => { closePanels(); store.push({ kind: "settings", section: "内容偏好" }); };
-  const openTagMenu = () => { setPanel(null); setTagMenu(true); };
+  const openTagMenu = (selected: string[] = []) => { setTagSelection(selected); setPanel(null); setTagMenu(true); };
   const openTag = (tag: string) => { closePanels(); store.push({ kind: "tag", tag, name: tag }); };
+  const lockControls = () => { setPanel(null); setControlsLocked(true); };
+  const toggleSwipeEp = () => {
+    const next = !swipeEp;
+    setSwipeEp(next);
+    toast(next ? "上下划切集已开启" : "上下划切集已关闭", "info");
+  };
 
-  useEffect(() => { setTagMenu(false); }, [curId, store.lineEpoch, accountScope]);
+  useEffect(() => { setTagMenu(false); setTagSelection([]); }, [curId, store.lineEpoch, accountScope]);
   useEffect(() => { if (!active) setSearching(false); }, [active]);
   useEffect(() => {
     store.setLocked(active && controlsLocked);
@@ -311,7 +318,7 @@ export default function Feed({
     boxRef, videoRef, pinchRef, playbackClock, isDesktop, active, controlsLocked, showHoldGuide,
     rotated, fs, clean, setClean, idle, setIdle, arm, wake, swipeEp, kind, curId, epMap, setEpMap,
     episodesLength: episodes.length, effectiveLength: effectiveVideoIds.length, go,
-    duration, playUrl, playKey, openTagMenu, setPanel, setTagMenu, toast,
+    duration, playUrl, playKey, setPanel, setTagMenu, toast,
   });
   useEffect(() => { setBarScrubbing(barPct !== null || scrub !== null); }, [barPct, scrub]);
 
@@ -537,7 +544,6 @@ export default function Feed({
     return registerOverlayBack(() => { setPanel(null); return true; });
   }, [active, panel]);
 
-  const lockControls = () => { setPanel(null); setControlsLocked(true); };
   const pickEp = (ep: number) => {
     setEpMap((m) => ({ ...m, [curId]: ep }));
     setPanel(null);
@@ -661,14 +667,17 @@ export default function Feed({
                   isActive={isActive} isDesktop={isDesktop} fs={fs} clean={clean} mode={mode} kind={kind}
                   title={title} index={index} effectiveLength={effectiveVideoIds.length} bottomInset={bottomInset}
                   curEp={curEp} duration={duration} meta={meta} post={post} hevcUrl={hevcUrl}
-                  preferHevc={preferHevc} setPreferHevc={setPreferHevc} swipeEp={swipeEp} setSwipeEp={setSwipeEp}
+                  preferHevc={preferHevc} setPreferHevc={setPreferHevc}
                   landscapeVideo={landscapeVideo} capsuleOn={capsuleOn} zoom={zoom} setZoom={setZoom}
                   portraitFit={portraitFit} setPortraitFit={setPortraitFit}
                   liked={liked} collected={collected} likePending={likePending} collectPending={collectPending}
                   heartBurst={heartBurst} likeCount={likeCount} collectCount={collectCount}
                   paused={paused} waiting={waiting} err={err} scrub={scrub} barRef={barRef} barPct={barPct}
                   playbackClock={playbackClock} onBack={onBack} enterFs={enterFs} stepDir={stepDir} canStep={canStep}
-                  onLike={onLike} onFav={onFav} setPanel={setPanel}
+                  onLike={onLike} onFav={onFav} setPanel={setPanel} openTag={openTag} openTagMenu={openTagMenu}
+                  muted={muted} onToggleMuted={() => setMuted(value => !value)}
+                  swipeEnabled={kind === "video" && episodes.length > 1} swipeEp={swipeEp} onToggleSwipe={toggleSwipeEp}
+                  onLock={lockControls}
                   onBarDown={onBarDown} onBarMove={onBarMove} onBarUp={onBarUp}
                   onRetryStream={() => {
                     setErr(""); setWaiting(true);
@@ -689,6 +698,7 @@ export default function Feed({
           paused={paused} duration={duration} rate={rate} setRate={setRate} effRate={effRate}
           holdSpeed={holdSpeed} holdSlow={holdSlow} speedLock={speedLock} setSpeedLock={setSpeedLock} lockArmed={lockArmed}
           muted={muted} setMuted={setMuted} volume={volume} setVolume={setVolume} swipeEp={swipeEp} setSwipeEp={setSwipeEp}
+          preferHevc={preferHevc} setPreferHevc={setPreferHevc} portraitFit={portraitFit} setPortraitFit={setPortraitFit}
           playKey={playKey} curId={curId} curEp={curEp} index={index} effectiveLength={effectiveVideoIds.length}
           kind={kind} meta={meta} likeCount={likeCount} collectCount={collectCount}
           episodes={episodes} related={related} follows={store.follows} followPending={followPending}
@@ -700,17 +710,17 @@ export default function Feed({
       </div>
 
       <FeedMobileTopTools
-        isDesktop={isDesktop} controlsLocked={controlsLocked} active={active} fs={fs} idle={idle}
-        rotated={rotated} clean={clean} muted={muted} setMuted={setMuted}
-        lockControls={lockControls}
-        onSearchTab={() => { if (mode === "context") setSearching(true); else store.setTab("search"); }}
+        isDesktop={isDesktop} controlsLocked={controlsLocked} active={active && !searching} fs={fs} idle={idle}
+        rotated={rotated} clean={clean} currentQuality={playUrl ? (preferHevc && hevcUrl && playUrl === hevcUrl ? "HD" : "SD") : null}
+        searchLabel={kind === "post" ? "搜吃瓜帖" : "搜短剧"}
+        onSearch={mode === "context" ? () => { closePanels(); setSearching(true); } : undefined}
       />
-      {searching && active && (
+      {searching && mode === "context" && active && (
         <InplaceSearch kind={kind} wide={isDesktop} onClose={() => setSearching(false)}
           onOpenVideo={(v, list, kw) => store.push({ kind: "feed", videoIds: list.map(x => x.id), index: list.findIndex(x => x.id === v.id), title: kw ? `搜索 · ${kw}` : "搜索" })}
           onOpenPost={(p) => store.push({ kind: "post", id: p.id })} />
       )}
-      <TagBlockMenu open={active && tagMenu} tags={meta.tags} onClose={() => setTagMenu(false)} onSettings={openPreferences} />
+      <TagBlockMenu open={active && tagMenu} tags={meta.tags} initialSelected={tagSelection} onClose={() => setTagMenu(false)} onSettings={openPreferences} />
       {!isDesktop && <MobileHoldGuide open={showHoldGuide} onClose={holdGuide.dismiss} target={holdTargetRef} bottomInset={bottomInset} />}
       {controlsLocked && <PlaybackLock active={active} rotated={rotated} immersive={!isDesktop && fs && !rotated} onUnlock={() => { setControlsLocked(false); wake(); }} />}
     </div>
