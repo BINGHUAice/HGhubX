@@ -8,6 +8,7 @@ import { usePlaybackActivity } from "./usePlaybackActivity";
 import { useProxyPlaybackRecovery } from "./useProxyPlaybackRecovery";
 import { createHlsRecovery, type HlsRecovery } from "./hlsRecovery";
 import AmbientGlow from "./AmbientGlow";
+import { tr } from "../../shared/i18n";
 
 if (Hls.version) registerHlsVersion(Hls.version);
 
