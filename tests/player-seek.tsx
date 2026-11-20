@@ -115,6 +115,7 @@ function Fixture() {
   fixture.setActive = setActive;
   fixture.setMounted = setMounted;
   return <AppProvider>
+    <ToastHost />
     <div data-player-fixture data-active={active} style={portraitFitTest
       ? { position: "relative", width: window.innerWidth, height: window.innerHeight }
       : { position: "relative", width: 900, height: 540 }}>

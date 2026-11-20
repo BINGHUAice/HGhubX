@@ -159,7 +159,11 @@ export default function Feed({
   const openPreferences = () => { closePanels(); store.push({ kind: "settings", section: "内容偏好" }); };
   const openTagMenu = (selected: string[] = []) => { setTagSelection(selected); setPanel(null); setTagMenu(true); };
   const openTag = (tag: string) => { closePanels(); store.push({ kind: "tag", tag, name: tag }); };
-  const lockControls = () => { setPanel(null); setControlsLocked(true); };
+  const lockControls = () => {
+    setPanel(null);
+    setControlsLocked(true);
+    toast("已锁定屏幕", "info", "screen-lock");
+  };
   const togglePlayback = useCallback(() => {
     videoRef.current?.toggle();
   }, []);
@@ -668,7 +672,7 @@ export default function Feed({
                 )}
 
                 <FeedItemChrome
-                  isActive={isActive} isDesktop={isDesktop} fs={fs} clean={clean} mode={mode} kind={kind}
+                  isActive={isActive} isDesktop={isDesktop} fs={fs} clean={clean} rotated={rotated} mode={mode} kind={kind}
                   title={title} index={index} effectiveLength={effectiveVideoIds.length} bottomInset={bottomInset}
                   curEp={curEp} duration={duration} meta={meta} post={post} hevcUrl={hevcUrl}
                   preferHevc={preferHevc} setPreferHevc={setPreferHevc}
@@ -725,7 +729,14 @@ export default function Feed({
       )}
       <TagBlockMenu open={active && tagMenu} tags={meta.tags} initialSelected={tagSelection} onClose={() => setTagMenu(false)} onSettings={openPreferences} />
       {!isDesktop && <MobileHoldGuide open={showHoldGuide} onClose={holdGuide.dismiss} target={holdTargetRef} bottomInset={bottomInset} />}
-      {controlsLocked && <PlaybackLock active={active} rotated={rotated} immersive={!isDesktop && fs && !rotated} onUnlock={() => { setControlsLocked(false); wake(); }} />}
+      {controlsLocked && <PlaybackLock active={active} rotated={rotated} immersive={!isDesktop && fs && !rotated}
+        onBlocked={() => toast("轻触即可解锁", "info", "screen-lock")}
+        onUnlock={() => {
+          setControlsLocked(false);
+          setClean(false);
+          wake();
+          toast("已解锁", "info", "screen-lock");
+        }} />}
     </div>
   );
 }
