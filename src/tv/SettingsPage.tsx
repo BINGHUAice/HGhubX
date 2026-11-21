@@ -86,7 +86,7 @@ export default function SettingsPage(){
           {updater.error&&<p className="tv-update-error" role="alert">{updater.error}</p>}
         </div>
         <div className="tv-options" data-tv-region="about-actions">
-          <button data-tv-focus="update-action" disabled={updater.status==="checking"} onClick={onPrimaryUpdate}>{primaryUpdateLabel}</button>
+          <button className="tv-update-primary" data-tv-focus="update-action" disabled={updater.status==="checking"} onClick={onPrimaryUpdate}>{primaryUpdateLabel}</button>
           {(updater.status==="available"||updater.status==="downloaded")&&<button data-tv-focus="update-recheck" onClick={()=>void checkTvUpdate(true)}>重新检查</button>}
           <button data-tv-focus="read-agreement" onClick={()=>setAgreement(true)}>查看使用协议</button>
         </div>
