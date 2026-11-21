@@ -15,8 +15,8 @@
 - 沿用与既有 `com.hghubx.tv` 相同的签名证书与单调递增 `versionCode`，支持直接覆盖升级，保留本机收藏、观看记录、线路偏好与启动 PIN。
 
 ## 致谢
+- 感谢 @zxsos 完成 #201 Android TV 应用内一键更新（多加速节点回退与 SHA-256 校验）、遥控器焦点恢复修复与设置页更新布局防抖优化。
 - 感谢 @oahceh 贡献 #199 FakeIP DNS 混合结果固定修复。
-- 维护与发布：@zxsos。
 
 ## 验证
 - 本地 `make check`（Rust 118 项单元测试通过 / 0 失败 / 4 联网测试跳过、文档链接、版本同步）与 `make test-tv`（TV 版本字段与 `VITE_APP_EDITION=tv pnpm build`）全量通过。
