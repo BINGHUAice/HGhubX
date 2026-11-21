@@ -60,7 +60,7 @@ export type Toast = {
   icon?: "ok" | "heart" | "star" | "info";
   /** 线路切换专用的结构化内容，有这个就不看 msg */
   line?: { region: "cn" | "intl"; host: string; ms: number };
-  /** 同 tag 的 toast 原地替换（如划集提示），快速触发不堆叠。 */
+  /** 同 tag 的 toast 原地替换（如 playback-hint 统一承载播放状态提示），快速触发不堆叠；无 tag 正常堆叠。 */
   tag?: string;
 };
 
