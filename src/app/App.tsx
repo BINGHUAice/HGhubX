@@ -56,7 +56,15 @@ function TabBar() {
       <div className="ios-mobile-nav-items">
         {items.map(({ key, label, Icon, Active }) => {
           const Glyph = tab === key ? Active : Icon;
-          return <Button key={key} className="ios-mobile-nav-item" onClick={() => setTab(key)}
+          return <Button key={key} className="ios-mobile-nav-item" onClick={() => {
+            /* Re-tapping the active Search tab returns to the search landing state;
+               the input clear button is hard to reach on tall screens. */
+            if (key === "search" && tab === "search") {
+              window.dispatchEvent(new Event("hg:search-reset"));
+              return;
+            }
+            setTab(key);
+          }}
             aria-current={tab === key ? "page" : undefined}>
             <Glyph size={22} /><span>{label}</span>
           </Button>;
