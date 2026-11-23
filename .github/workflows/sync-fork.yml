@@ -2,47 +2,26 @@ name: Sync fork with upstream
 
 on:
   schedule:
-    - cron: "0 3 * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
 
-env:
-  UPSTREAM_REPOSITORY: zxsos/HGhubX
-  UPSTREAM_BRANCH: main
-  TARGET_BRANCH: main
+concurrency:
+  group: sync-fork-main
+  cancel-in-progress: false
 
 jobs:
   sync:
     name: Sync fork
     runs-on: ubuntu-latest
+    if: github.repository == 'BINGHUAice/HGhubX'
 
     steps:
-      - name: Checkout target branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.TARGET_BRANCH }}
-          fetch-depth: 0
-
-      - name: Configure Git
+      - name: Sync main with the upstream fork parent
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Add upstream remote
-        run: |
-          git remote add upstream https://github.com/${{ env.UPSTREAM_REPOSITORY }}.git
-          git remote -v
-
-      - name: Fetch upstream
-        run: |
-          git fetch upstream ${{ env.UPSTREAM_BRANCH }}
-
-      - name: Merge upstream into fork
-        run: |
-          git merge upstream/${{ env.UPSTREAM_BRANCH }}
-
-      - name: Push changes
-        run: |
-          git push origin ${{ env.TARGET_BRANCH }}
+          gh api --method POST "repos/${GITHUB_REPOSITORY}/merge-upstream" \
+            --raw-field branch=main
