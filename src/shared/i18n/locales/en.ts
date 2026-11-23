@@ -804,6 +804,15 @@ const en: Record<string, string> = {
   "部分收藏未能加载，筛选结果可能不完整。": "Some favorites failed to load; filtered results may be incomplete.",
   "{0} 项收藏未能加载，筛选结果可能不完整。": "{0} favorites failed to load; filtered results may be incomplete.",
   "{0} 项收藏详情未能加载，分类计数可能不完整。": "{0} favorite details failed to load; category counts may be incomplete.",
+  "排序": "Sort",
+  "排序方式": "Sort by",
+  "排序：{0}": "Sort: {0}",
+  "默认排序": "Default",
+  "点赞数": "Likes",
+  "收藏数": "Collects",
+  "播放数": "Plays",
+  "评分": "Rating",
+  "正在加载全部结果以排序…": "Loading all results to sort…",
 };
 
 export default en;
